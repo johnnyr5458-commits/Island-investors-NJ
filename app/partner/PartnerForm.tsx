@@ -21,13 +21,16 @@ export default function PartnerForm() {
         body: new FormData(form),
         headers: { Accept: "application/json" },
       });
-      if (res.ok) {
+      const json = await res.json().catch(() => ({}));
+      if (res.ok && json.ok) {
         setStatus("success");
         form.reset();
       } else {
+        console.error("[PartnerForm] Formspree error:", res.status, json);
         setStatus("error");
       }
-    } catch {
+    } catch (err) {
+      console.error("[PartnerForm] Network error:", err);
       setStatus("error");
     }
   }
