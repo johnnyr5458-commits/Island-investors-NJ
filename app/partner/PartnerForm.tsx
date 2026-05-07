@@ -1,15 +1,38 @@
 "use client";
 
-import { useForm, ValidationError } from "@formspree/react";
+import { useState } from "react";
 import TrustBlock from "@/components/shared/TrustBlock";
 
+type Status = "idle" | "submitting" | "success" | "error";
+
 export default function PartnerForm() {
-  const [state, handleSubmit] = useForm("mpqbjlob");
+  const [status, setStatus] = useState<Status>("idle");
 
   const inputClass = "w-full bg-navy-700 border border-navy-600 text-white placeholder-silver-400/50 px-4 py-3 text-sm font-sans focus:outline-none focus:border-gold-500/60 transition-colors";
   const labelClass = "block font-sans text-xs font-bold uppercase tracking-wider text-silver-400 mb-2";
 
-  if (state.succeeded) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    setStatus("submitting");
+    try {
+      const res = await fetch("https://formspree.io/f/mpqbjlob", {
+        method: "POST",
+        body: new FormData(form),
+        headers: { Accept: "application/json" },
+      });
+      if (res.ok) {
+        setStatus("success");
+        form.reset();
+      } else {
+        setStatus("error");
+      }
+    } catch {
+      setStatus("error");
+    }
+  }
+
+  if (status === "success") {
     return (
       <div className="bg-navy-800 p-10 text-center">
         <div className="w-14 h-14 rounded-full bg-gold-500/20 border border-gold-500/40 flex items-center justify-center mx-auto mb-5">
@@ -33,7 +56,6 @@ export default function PartnerForm() {
         <div>
           <label htmlFor="p-name" className={labelClass}>Full Name *</label>
           <input id="p-name" name="name" type="text" required placeholder="Your name" className={inputClass} />
-          <ValidationError field="name" errors={state.errors} className="text-red-400 text-xs mt-1" />
         </div>
         <div>
           <label htmlFor="p-company" className={labelClass}>Company / Business</label>
@@ -45,12 +67,10 @@ export default function PartnerForm() {
         <div>
           <label htmlFor="p-email" className={labelClass}>Email Address *</label>
           <input id="p-email" name="email" type="email" required placeholder="you@example.com" className={inputClass} />
-          <ValidationError field="email" errors={state.errors} className="text-red-400 text-xs mt-1" />
         </div>
         <div>
           <label htmlFor="p-phone" className={labelClass}>Phone Number *</label>
           <input id="p-phone" name="phone" type="tel" required placeholder="(609) 000-0000" className={inputClass} />
-          <ValidationError field="phone" errors={state.errors} className="text-red-400 text-xs mt-1" />
         </div>
       </div>
 
@@ -76,7 +96,6 @@ export default function PartnerForm() {
             <option value="Creative Financing">Creative Financing</option>
             <option value="Hybrid / Situation Dependent">Hybrid / Situation Dependent</option>
           </select>
-          <ValidationError field="funding" errors={state.errors} className="text-red-400 text-xs mt-1" />
         </div>
         <div>
           <label htmlFor="p-volume" className={labelClass}>Typical Project Volume</label>
@@ -99,17 +118,18 @@ export default function PartnerForm() {
           placeholder="Share how you typically work, what kinds of projects interest you, or what matters most to you in a professional partnership."
           className={inputClass + " resize-none"}
         />
-        <ValidationError field="notes" errors={state.errors} className="text-red-400 text-xs mt-1" />
       </div>
 
-      <ValidationError errors={state.errors} className="text-red-400 text-sm" />
+      {status === "error" && (
+        <p className="text-red-400 text-sm">Something went wrong. Please try again or call us at (609) 800-4303.</p>
+      )}
 
       <button
         type="submit"
-        disabled={state.submitting}
+        disabled={status === "submitting"}
         className="w-full bg-gold-500 hover:bg-gold-400 disabled:opacity-60 text-white font-sans font-bold py-4 tracking-wide uppercase text-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-gold-500/20"
       >
-        {state.submitting ? "Sending..." : "Send My Introduction →"}
+        {status === "submitting" ? "Sending..." : "Send My Introduction →"}
       </button>
 
       <TrustBlock dark={true} />

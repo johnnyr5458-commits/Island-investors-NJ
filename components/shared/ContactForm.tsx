@@ -1,10 +1,12 @@
 "use client";
 
-import { useForm, ValidationError } from "@formspree/react";
+import { useState } from "react";
 import TrustBlock from "./TrustBlock";
 
+type Status = "idle" | "submitting" | "success" | "error";
+
 export default function ContactForm({ dark = false }: { dark?: boolean }) {
-  const [state, handleSubmit] = useForm("mpqbjlob");
+  const [status, setStatus] = useState<Status>("idle");
 
   const inputClass = `w-full px-4 py-3 rounded-sm text-sm font-sans border transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gold-500 ${
     dark
@@ -12,7 +14,28 @@ export default function ContactForm({ dark = false }: { dark?: boolean }) {
       : "bg-white border-silver-100 text-charcoal placeholder:text-gray-400 focus:border-gold-500"
   }`;
 
-  if (state.succeeded) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    setStatus("submitting");
+    try {
+      const res = await fetch("https://formspree.io/f/mpqbjlob", {
+        method: "POST",
+        body: new FormData(form),
+        headers: { Accept: "application/json" },
+      });
+      if (res.ok) {
+        setStatus("success");
+        form.reset();
+      } else {
+        setStatus("error");
+      }
+    } catch {
+      setStatus("error");
+    }
+  }
+
+  if (status === "success") {
     return (
       <div className="text-center py-10">
         <div className="w-16 h-16 rounded-full bg-gold-500/20 flex items-center justify-center mx-auto mb-4">
@@ -43,7 +66,6 @@ export default function ContactForm({ dark = false }: { dark?: boolean }) {
           placeholder="123 Main St, Atlantic City, NJ"
           className={inputClass}
         />
-        <ValidationError field="address" errors={state.errors} className="text-red-400 text-xs mt-1" />
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -58,7 +80,6 @@ export default function ContactForm({ dark = false }: { dark?: boolean }) {
             placeholder="John Smith"
             className={inputClass}
           />
-          <ValidationError field="name" errors={state.errors} className="text-red-400 text-xs mt-1" />
         </div>
         <div>
           <label className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${dark ? "text-silver-300" : "text-gray-600"}`}>
@@ -71,7 +92,6 @@ export default function ContactForm({ dark = false }: { dark?: boolean }) {
             placeholder="(609) 800-4303"
             className={inputClass}
           />
-          <ValidationError field="phone" errors={state.errors} className="text-red-400 text-xs mt-1" />
         </div>
       </div>
 
@@ -98,17 +118,18 @@ export default function ContactForm({ dark = false }: { dark?: boolean }) {
           placeholder="Inherited property, behind on payments, need to relocate..."
           className={inputClass}
         />
-        <ValidationError field="message" errors={state.errors} className="text-red-400 text-xs mt-1" />
       </div>
 
-      <ValidationError errors={state.errors} className="text-red-400 text-sm" />
+      {status === "error" && (
+        <p className="text-red-400 text-sm">Something went wrong. Please try again or call us directly at (609) 800-4303.</p>
+      )}
 
       <button
         type="submit"
-        disabled={state.submitting}
+        disabled={status === "submitting"}
         className="w-full bg-gold-500 hover:bg-gold-400 text-white font-sans font-bold text-base py-4 px-6 rounded-sm tracking-wide transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-gold-500/30 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
       >
-        {state.submitting ? "Sending..." : "Request a Conversation →"}
+        {status === "submitting" ? "Sending..." : "Request a Conversation →"}
       </button>
 
       <p className={`text-center text-xs ${dark ? "text-silver-400" : "text-gray-500"}`}>
