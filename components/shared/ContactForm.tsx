@@ -19,18 +19,17 @@ export default function ContactForm({ dark = false }: { dark?: boolean }) {
     const form = e.currentTarget;
     setStatus("submitting");
     try {
-      const data = Object.fromEntries(new FormData(form));
-      const res = await fetch("/api/contact", {
+      const res = await fetch("https://formspree.io/f/mpqbjlob", {
         method: "POST",
-        body: JSON.stringify(data),
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: new FormData(form),
+        headers: { Accept: "application/json" },
       });
       const json = await res.json().catch(() => ({}));
       if (res.ok && json.ok) {
         setStatus("success");
         form.reset();
       } else {
-        console.error("[ContactForm] Submission failed:", res.status, json);
+        console.error("[ContactForm] Formspree error:", res.status, json);
         setStatus("error");
       }
     } catch (err) {
