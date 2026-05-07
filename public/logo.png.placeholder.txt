@@ -1,0 +1,10 @@
+IMPORTANT: Replace this placeholder with the actual logo.png file.
+
+Place your logo at: /root/islandinvestorsnj/public/logo.png
+
+The logo should be:
+- Format: PNG with transparent background
+- Recommended size: 400x120px (or similar wide aspect ratio)
+- Works on dark backgrounds (the header is dark navy)
+
+Until the real logo is added, the site will show a broken image in the header.

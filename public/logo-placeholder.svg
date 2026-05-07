@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="80" viewBox="0 0 320 80">
+  <rect width="320" height="80" fill="transparent"/>
+  <text x="16" y="48" font-family="Georgia, serif" font-size="28" font-weight="700" fill="#C8962A">Island Investors</text>
+  <text x="16" y="68" font-family="Georgia, serif" font-size="16" font-weight="400" fill="#C8D0DA" letter-spacing="4">NJ</text>
+  <rect x="0" y="0" width="4" height="80" fill="#C8962A"/>
+</svg>
