@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import ContactForm from "@/components/shared/ContactForm";
 import { buildMetadata } from "@/lib/metadata";
 
@@ -12,12 +13,26 @@ export const metadata: Metadata = buildMetadata({
 export default function ContactPage() {
   return (
     <div className="bg-cream-50 min-h-screen">
-      {/* Hero */}
-      <section
-        className="py-32 md:py-40"
-        style={{ background: "linear-gradient(160deg, #060E1A 0%, #0B1C2E 100%)" }}
-      >
-        <div className="section-container">
+      {/* Hero — calming South Jersey sunset image */}
+      <section className="pt-32 md:pt-40 pb-28 md:pb-32 relative overflow-hidden">
+        {/* Background: warm bay sunset, reassuring and calm */}
+        <div className="absolute inset-0 z-0">
+          <Image
+            src="/images/atlantic-city-bay-sunset-neighborhood-silhouette.webp"
+            alt="Atlantic City bay sunset with neighborhood silhouette"
+            fill
+            priority
+            className="object-cover [object-position:center_50%] md:[object-position:center_45%]"
+            sizes="100vw"
+          />
+        </div>
+        {/* Left-concentrated gradient — lets the sunset show on the right */}
+        <div className="absolute inset-0 z-[1] bg-gradient-to-r from-navy-950/82 via-navy-950/55 to-navy-950/22" />
+        {/* Vertical depth — heavier at bottom for clean form transition */}
+        <div className="absolute inset-0 z-[2] bg-gradient-to-b from-navy-950/15 via-transparent to-navy-950/40" />
+        <div className="absolute bottom-0 left-0 right-0 z-[3] h-px bg-gradient-to-r from-transparent via-gold-500/30 to-transparent" />
+
+        <div className="section-container relative z-[4]">
           <div className="max-w-xl">
             <p className="font-sans text-xs font-bold uppercase tracking-[0.2em] text-gold-400 mb-5">
               No Pressure · No Obligation
@@ -35,8 +50,8 @@ export default function ContactPage() {
         </div>
       </section>
 
-      {/* Form section */}
-      <section className="section-container -mt-16 pb-24">
+      {/* Form section — overlap only on md+ so mobile content isn't covered */}
+      <section className="section-container mt-6 md:-mt-16 pb-24">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Form */}
           <div className="lg:col-span-2 bg-white shadow-[0_8px_40px_rgba(0,0,0,0.10)] p-8 md:p-10">

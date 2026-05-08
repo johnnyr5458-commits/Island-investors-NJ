@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { buildMetadata } from "@/lib/metadata";
 
@@ -17,6 +18,8 @@ const steps = [
       "Start by filling out our simple form or giving us a call at (609) 800-4303. Tell us about your property — the address, the condition, and your situation. There's no judgment here. We've helped homeowners through every kind of challenge imaginable.",
     detail:
       "We'll review your information and reach out within 24 hours. This step takes less than 5 minutes and there's no cost or commitment required.",
+    image: "/images/south-jersey-bay-sunset-waterfront-island-investors.webp",
+    imageAlt: "South Jersey bay sunset over calm waterfront near Atlantic City",
   },
   {
     number: "02",
@@ -25,6 +28,8 @@ const steps = [
       "One of our local team members will schedule a convenient time to visit your property. This visit is quick — typically 20–30 minutes — and you don't need to do any cleaning, repairs, or preparation.",
     detail:
       "The walkthrough helps us finalize our cash offer and gives you a chance to ask us any questions you have about the process. We're transparent about everything.",
+    image: "/images/south-jersey-bayfront-waterfront-reflection-island-investors.webp",
+    imageAlt: "Quiet South Jersey bayfront water view with morning reflections",
   },
   {
     number: "03",
@@ -33,6 +38,8 @@ const steps = [
       "If you accept our offer, we'll schedule closing at a local title company. You choose the date — we can close in as few as 7 days or give you more time if you need it. At closing, you receive your cash payment.",
     detail:
       "We cover all closing costs. You pay zero commissions, zero agent fees, and zero hidden charges. What we offer is what you receive.",
+    image: "/images/atlantic-city-sunset-marina-waterfront-island-investors.webp",
+    imageAlt: "Vivid Atlantic City area sunset over a waterfront marina",
   },
 ];
 
@@ -80,11 +87,10 @@ export default function HowItWorksPage() {
             {steps.map((step, i) => (
               <div
                 key={step.number}
-                className={`grid grid-cols-1 lg:grid-cols-2 gap-12 items-center ${
-                  i % 2 === 1 ? "lg:flex-row-reverse" : ""
-                }`}
+                className={`grid grid-cols-1 lg:grid-cols-2 gap-0 lg:gap-12 items-stretch`}
               >
-                <div className={i % 2 === 1 ? "lg:order-2" : ""}>
+                {/* Text side */}
+                <div className={`${i % 2 === 1 ? "lg:order-2" : ""} flex flex-col justify-center py-8 lg:py-0`}>
                   <span className="font-accent text-8xl font-light text-gold-500/20 leading-none block mb-4">
                     {step.number}
                   </span>
@@ -96,12 +102,23 @@ export default function HowItWorksPage() {
                     {step.detail}
                   </p>
                 </div>
-                <div className={`${i % 2 === 1 ? "lg:order-1" : ""} bg-navy-900 p-10 flex items-center justify-center min-h-[200px]`}>
-                  <div className="text-center">
-                    <span className="font-accent text-9xl font-light text-gold-400/30">
+
+                {/* Photo side — replaces empty dark panel */}
+                <div className={`${i % 2 === 1 ? "lg:order-1" : ""} relative min-h-[240px] md:min-h-[320px] overflow-hidden`}>
+                  <Image
+                    src={step.image}
+                    alt={step.imageAlt}
+                    fill
+                    className="object-cover object-center"
+                    sizes="(max-width: 1024px) 100vw, 50vw"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-navy-950/38" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
+                    <span className="font-accent text-[7rem] font-light text-gold-400/40 leading-none select-none">
                       {step.number}
                     </span>
-                    <p className="font-display text-xl font-semibold text-white mt-2">
+                    <p className="font-display text-xl font-semibold text-white -mt-4 max-w-xs leading-snug">
                       {step.title}
                     </p>
                   </div>

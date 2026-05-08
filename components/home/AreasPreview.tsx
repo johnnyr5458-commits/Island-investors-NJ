@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 import SectionHeader from "@/components/shared/SectionHeader";
 import { getCounties } from "@/lib/areas";
@@ -39,6 +40,30 @@ export default function AreasPreview() {
               </Link>
             </motion.div>
           ))}
+        </div>
+
+        {/* Local area photo — Atlantic City coastline */}
+        <div className="mt-14 relative overflow-hidden h-52 md:h-64">
+          <Image
+            src="/images/atlantic-city-skyline-ocean-view-island-investors.webp"
+            alt="Atlantic City skyline seen across the ocean from the South Jersey shore"
+            fill
+            className="object-cover object-center"
+            sizes="(max-width: 768px) 100vw, 1200px"
+            loading="lazy"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-navy-950/75 via-navy-950/40 to-navy-950/20" />
+          <div className="absolute inset-0 bg-gradient-to-t from-navy-950/50 to-transparent" />
+          <div className="absolute inset-0 flex items-center px-8 md:px-12">
+            <div>
+              <p className="font-sans text-xs font-bold uppercase tracking-[0.22em] text-gold-400 mb-2">
+                Atlantic City, NJ — Our Home Base
+              </p>
+              <p className="font-display text-xl md:text-2xl font-semibold text-white leading-snug max-w-md">
+                We&apos;re right up the street from the homeowners we help.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Our Backyard */}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { buildMetadata } from "@/lib/metadata";
 import ContactForm from "@/components/shared/ContactForm";
+import LocalPhotoStrip from "@/components/shared/LocalPhotoStrip";
 
 export const metadata: Metadata = buildMetadata({
   title: "Foreclosure Help South Jersey — Know Your Options",
@@ -58,6 +59,14 @@ export default function ForeclosurePage() {
           </div>
         </div>
       </section>
+
+      <LocalPhotoStrip
+        src="/images/atlantic-city-area-beach-dunes-ocean-view-island-investors.webp"
+        alt="Beach dunes and ocean view along the Atlantic City area coastline"
+        eyebrow="South Jersey · Real Solutions"
+        heading="There are options. Let's talk through them."
+        position="[object-position:center_50%]"
+      />
 
       <section className="py-24 bg-cream-50">
         <div className="section-container max-w-3xl">

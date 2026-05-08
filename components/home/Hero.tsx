@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 
 const ease: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -26,19 +27,21 @@ export default function Hero() {
       className="relative min-h-screen flex flex-col justify-center overflow-hidden"
       aria-label="Hero section"
     >
-      {/* Background image via CSS — no state, no flicker */}
-      <div
-        className="absolute inset-0 z-0"
-        style={{
-          backgroundImage: "url('/hero-bg.jpg')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      />
+      {/* Background image — real local photo of Atlantic City at sunrise */}
+      <div className="absolute inset-0 z-0">
+        <Image
+          src="/images/atlantic-city-sunrise-skyline-orange-sky-island-investors.webp"
+          alt="Atlantic City skyline at sunrise with orange sky over the waterfront"
+          fill
+          priority
+          className="object-cover [object-position:55%_70%] md:[object-position:center_50%]"
+          sizes="100vw"
+        />
+      </div>
 
-      {/* Navy overlay — left heavy so text stays legible */}
-      <div className="absolute inset-0 z-[1] bg-gradient-to-r from-navy-950/95 via-navy-950/75 to-navy-950/30" />
-      <div className="absolute inset-0 z-[1] bg-gradient-to-t from-navy-950/70 via-transparent to-navy-950/30" />
+      {/* Navy overlay — left heavy so text stays legible, right opens up to show the skyline */}
+      <div className="absolute inset-0 z-[1] bg-gradient-to-r from-navy-950/82 via-navy-950/50 to-navy-950/15" />
+      <div className="absolute inset-0 z-[1] bg-gradient-to-t from-navy-950/42 via-transparent to-navy-950/15" />
 
       {/* Coastal texture */}
       <div

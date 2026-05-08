@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { buildMetadata } from "@/lib/metadata";
+import LocalPhotoStrip from "@/components/shared/LocalPhotoStrip";
 
 export const metadata: Metadata = buildMetadata({
   title: "About Island Investors LLC — South Jersey Real Estate Solutions",
@@ -59,13 +61,27 @@ export default function AboutPage() {
       {/* Hero */}
       <section
         className="pt-40 pb-24 relative overflow-hidden"
-        style={{ background: "linear-gradient(160deg, #060E1A 0%, #0B1C2E 55%, #112540 100%)" }}
       >
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-500/30 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-500/20 to-transparent" />
-        <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-[400px] h-[400px] rounded-full opacity-[0.06] blur-[100px] bg-gold-500 pointer-events-none" />
+        {/* Real local photo: South Jersey shore neighborhood at sunset */}
+        <div className="absolute inset-0 z-0">
+          <Image
+            src="/images/south-jersey-shore-sunset-neighborhood-island-investors.webp"
+            alt="Warm sunset over a quiet South Jersey shore neighborhood near Atlantic City"
+            fill
+            priority
+            className="object-cover object-center"
+            sizes="100vw"
+          />
+        </div>
+        {/* Left-heavy gradient — lets the South Jersey sunset show on the right */}
+        <div className="absolute inset-0 z-[1] bg-gradient-to-r from-navy-950/80 via-navy-950/50 to-navy-950/18" />
+        <div className="absolute inset-0 z-[1] bg-gradient-to-r from-navy-950/22 via-transparent to-transparent" />
+        <div className="absolute inset-0 z-[1] bg-gradient-to-b from-navy-950/18 via-transparent to-navy-950/35" />
+        <div className="absolute top-0 left-0 right-0 z-[2] h-px bg-gradient-to-r from-transparent via-gold-500/30 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 z-[2] h-px bg-gradient-to-r from-transparent via-gold-500/20 to-transparent" />
+        <div className="absolute top-1/2 right-1/4 -translate-y-1/2 z-[2] w-[400px] h-[400px] rounded-full opacity-[0.04] blur-[100px] bg-gold-500 pointer-events-none" />
 
-        <div className="section-container max-w-3xl relative z-10">
+        <div className="section-container max-w-3xl relative z-[3]">
           <p className="font-sans text-xs font-bold uppercase tracking-[0.22em] text-gold-400 mb-5">
             Locally Owned · South Jersey
           </p>
@@ -167,6 +183,15 @@ export default function AboutPage() {
           </div>
         </div>
       </section>
+
+      {/* Local photo break — bayfront homes at dawn */}
+      <LocalPhotoStrip
+        src="/images/atlantic-city-bayfront-homes-morning-reflection-island-investors.webp"
+        alt="Bayfront homes reflected on calm water in the Atlantic City area"
+        eyebrow="Locally Owned · Atlantic City, NJ"
+        heading="30 years of South Jersey roots — and counting."
+        position="[object-position:center_40%]"
+      />
 
       {/* Our approach */}
       <section

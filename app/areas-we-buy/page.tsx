@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { buildMetadata } from "@/lib/metadata";
 import { getCounties, getCitiesByCounty } from "@/lib/areas";
+import LocalPhotoStrip from "@/components/shared/LocalPhotoStrip";
 
 export const metadata: Metadata = buildMetadata({
   title: "Areas We Buy Houses In — South Jersey",
@@ -17,10 +19,24 @@ export default function AreasPage() {
     <div>
       {/* Hero */}
       <section
-        className="pt-36 pb-24"
-        style={{ background: "linear-gradient(160deg, #060E1A 0%, #112540 100%)" }}
+        className="pt-36 pb-24 relative overflow-hidden"
       >
-        <div className="section-container max-w-3xl">
+        {/* Real local photo: Atlantic City casino skyline and oceanfront */}
+        <div className="absolute inset-0 z-0">
+          <Image
+            src="/images/atlantic-city-casino-skyline-oceanfront-island-investors.webp"
+            alt="Atlantic City casino skyline and oceanfront view from the South Jersey coast"
+            fill
+            priority
+            className="object-cover object-bottom"
+            sizes="100vw"
+          />
+        </div>
+        {/* Left-heavy gradient — lets the Atlantic City skyline show on the right */}
+        <div className="absolute inset-0 z-[1] bg-gradient-to-r from-navy-950/80 via-navy-950/50 to-navy-950/18" />
+        <div className="absolute inset-0 z-[1] bg-gradient-to-r from-navy-950/28 via-transparent to-transparent" />
+        <div className="absolute inset-0 z-[1] bg-gradient-to-t from-navy-950/18 via-transparent to-transparent" />
+        <div className="section-container max-w-3xl relative z-[2]">
           <p className="font-sans text-xs font-bold uppercase tracking-[0.2em] text-gold-400 mb-5">
             Based in Atlantic City · Serving South Jersey
           </p>
@@ -79,6 +95,15 @@ export default function AreasPage() {
           </div>
         </div>
       </section>
+
+      {/* Local photo break — South Jersey bayfront */}
+      <LocalPhotoStrip
+        src="/images/south-jersey-bayfront-waterfront-reflection-island-investors.webp"
+        alt="Quiet South Jersey bayfront water view with morning reflections"
+        eyebrow="South Jersey · Your Neighborhood"
+        heading="From the Delaware River to the shore, we buy here."
+        position="[object-position:center_40%]"
+      />
 
       {/* CTA */}
       <section className="py-16 bg-navy-900 text-center">

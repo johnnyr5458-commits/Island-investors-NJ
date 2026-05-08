@@ -9,6 +9,7 @@ import FounderMessage from "@/components/home/FounderMessage";
 import AreasPreview from "@/components/home/AreasPreview";
 import HomeFAQ from "@/components/home/HomeFAQ";
 import FinalCTA from "@/components/home/FinalCTA";
+import LocalPhotoStrip from "@/components/shared/LocalPhotoStrip";
 import SchemaMarkup from "@/components/shared/SchemaMarkup";
 import { faqSchema } from "@/lib/schema";
 import { homeFAQs } from "@/lib/faq-data";
@@ -29,8 +30,22 @@ export default function HomePage() {
       <Hero />
       <TrustBar />
       <WhoWeHelp />
+      <LocalPhotoStrip
+        src="/images/atlantic-city-boardwalk-homes-dusk-island-investors.webp"
+        alt="Atlantic City boardwalk homes at dusk near a residential neighborhood"
+        eyebrow="Atlantic City, NJ · Our Community"
+        heading="Every situation is different. We've helped them all."
+        position="[object-position:center_40%]"
+      />
       <HowItWorks />
       <WhyChooseUs />
+      <LocalPhotoStrip
+        src="/images/atlantic-city-red-door-home-exterior.webp"
+        alt="Atlantic City home exterior with red front door and brick porch"
+        eyebrow="South Jersey Homeowners"
+        heading="Real homes. Real situations. Honest conversations."
+        position="[object-position:center_50%]"
+      />
       <FounderMessage />
       <Testimonials />
       <AreasPreview />

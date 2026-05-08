@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { buildMetadata } from "@/lib/metadata";
 import ContactForm from "@/components/shared/ContactForm";
+import LocalPhotoStrip from "@/components/shared/LocalPhotoStrip";
 
 export const metadata: Metadata = buildMetadata({
   title: "Inherited Property in South Jersey — Understand Your Options",
@@ -48,6 +49,14 @@ export default function InheritedPropertyPage() {
           </div>
         </div>
       </section>
+
+      <LocalPhotoStrip
+        src="/images/atlantic-city-bayfront-homes-morning-reflection-island-investors.webp"
+        alt="Bayfront homes reflected on calm water in the Atlantic City area"
+        eyebrow="Inherited Property · South Jersey"
+        heading="You don't have to figure this out alone."
+        position="[object-position:center_40%]"
+      />
 
       <section className="py-24 bg-cream-50">
         <div className="section-container max-w-3xl">

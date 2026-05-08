@@ -1,8 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
-import SectionHeader from "@/components/shared/SectionHeader";
 
 const situations = [
   {
@@ -69,16 +69,51 @@ const situations = [
 
 export default function WhoWeHelp() {
   return (
-    <section className="bg-cream-50 py-24 md:py-32" aria-labelledby="who-we-help-heading">
-      <div className="section-container">
-        <SectionHeader
-          eyebrow="Who We Help"
-          title="Whatever Your Situation, We Have a Solution"
-          subtitle="We've helped South Jersey homeowners through every kind of challenging real estate situation — quickly, fairly, and with zero hassle."
-          id="who-we-help-heading"
-        />
+    <section className="overflow-hidden bg-cream-50" aria-labelledby="who-we-help-heading">
 
-        <div className="mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      {/* Image-backed section header — South Jersey neighborhood feel */}
+      <div className="relative overflow-hidden h-56 md:h-72">
+        <Image
+          src="/images/atlantic-city-residential-street-white-porches.webp"
+          alt="Atlantic City residential street with white porches and parked cars"
+          fill
+          className="object-cover [object-position:center_45%]"
+          sizes="100vw"
+          loading="lazy"
+        />
+        {/* Overlay — lightened so neighborhood detail shows through */}
+        <div className="absolute inset-0 bg-navy-950/52" />
+        <div className="absolute inset-0 bg-gradient-to-r from-navy-950/35 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-navy-950/45 via-transparent to-transparent" />
+        <div className="absolute inset-0 flex flex-col justify-center px-8 md:px-12">
+          <p className="font-sans text-xs font-bold uppercase tracking-[0.22em] text-gold-400 mb-3">
+            Who We Help
+          </p>
+          <h2
+            id="who-we-help-heading"
+            className="font-display text-2xl md:text-4xl font-bold text-white leading-tight mb-3"
+          >
+            Whatever Your Situation,
+            <span className="block">We Have a Solution</span>
+          </h2>
+          <p className="text-silver-300 text-sm leading-relaxed max-w-lg hidden md:block">
+            We&apos;ve helped South Jersey homeowners through every kind of challenging
+            real estate situation — quickly, fairly, and with zero hassle.
+          </p>
+        </div>
+      </div>
+
+      {/* Subtitle visible on mobile only (below image) */}
+      <div className="section-container pt-8 pb-0 md:hidden">
+        <p className="text-gray-600 text-sm leading-relaxed">
+          We&apos;ve helped South Jersey homeowners through every kind of challenging
+          real estate situation — quickly, fairly, and with zero hassle.
+        </p>
+      </div>
+
+      {/* Card grid */}
+      <div className="section-container py-10 md:py-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {situations.map((item, i) => (
             <motion.div
               key={item.title}

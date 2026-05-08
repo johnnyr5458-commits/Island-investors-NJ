@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { buildMetadata } from "@/lib/metadata";
 import PartnerForm from "./PartnerForm";
+import LocalPhotoStrip from "@/components/shared/LocalPhotoStrip";
 
 export const metadata: Metadata = buildMetadata({
   title: "Partner With Island Investors — Local Real Estate Network",
@@ -33,13 +35,26 @@ export default function PartnerPage() {
       {/* Hero */}
       <section
         className="pt-40 pb-24 relative overflow-hidden"
-        style={{ background: "linear-gradient(160deg, #060E1A 0%, #0B1C2E 55%, #112540 100%)" }}
       >
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-500/30 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold-500/20 to-transparent" />
-        <div className="absolute top-1/2 right-1/4 -translate-y-1/2 w-[400px] h-[400px] rounded-full opacity-[0.06] blur-[100px] bg-gold-500 pointer-events-none" />
+        {/* Real local photo: Atlantic City bayfront homes with water view */}
+        <div className="absolute inset-0 z-0">
+          <Image
+            src="/images/atlantic-city-bayfront-homes-water-view.webp"
+            alt="Atlantic City bayfront homes with water view"
+            fill
+            priority
+            className="object-cover [object-position:center_50%]"
+            sizes="100vw"
+          />
+        </div>
+        {/* Left-heavy gradient — lets bayfront homes and water show on the right */}
+        <div className="absolute inset-0 z-[1] bg-gradient-to-r from-navy-950/82 via-navy-950/52 to-navy-950/20" />
+        <div className="absolute inset-0 z-[1] bg-gradient-to-r from-navy-950/28 via-transparent to-transparent" />
+        <div className="absolute inset-0 z-[1] bg-gradient-to-b from-navy-950/18 via-transparent to-navy-950/28" />
+        <div className="absolute top-0 left-0 right-0 z-[2] h-px bg-gradient-to-r from-transparent via-gold-500/30 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 z-[2] h-px bg-gradient-to-r from-transparent via-gold-500/20 to-transparent" />
 
-        <div className="section-container max-w-3xl relative z-10">
+        <div className="section-container max-w-3xl relative z-[3]">
           <p className="font-sans text-xs font-bold uppercase tracking-[0.22em] text-gold-400 mb-5">
             For Investors &amp; Real Estate Professionals
           </p>
@@ -85,6 +100,15 @@ export default function PartnerPage() {
           </div>
         </div>
       </section>
+
+      {/* Local photo break — boardwalk and Atlantic City identity */}
+      <LocalPhotoStrip
+        src="/images/atlantic-city-boardwalk-kingston-avenue-oceanfront.webp"
+        alt="Atlantic City boardwalk near Kingston Avenue and oceanfront homes"
+        eyebrow="Atlantic City · South Jersey"
+        heading="Local roots. Professional standards. Long-term relationships."
+        position="[object-position:center_55%]"
+      />
 
       {/* Network note */}
       <section className="py-16 bg-white border-y border-silver-100">

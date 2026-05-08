@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { buildMetadata } from "@/lib/metadata";
 import ContactForm from "@/components/shared/ContactForm";
+import LocalPhotoStrip from "@/components/shared/LocalPhotoStrip";
 
 export const metadata: Metadata = buildMetadata({
   title: "Sell Your House Fast in South Jersey — Island Investors LLC",
@@ -121,6 +122,15 @@ export default function SellFastPage() {
           </div>
         </div>
       </section>
+
+      {/* Local photo break before CTA */}
+      <LocalPhotoStrip
+        src="/images/south-jersey-shore-sunset-neighborhood-island-investors.webp"
+        alt="Warm sunset over a quiet South Jersey shore neighborhood near Atlantic City"
+        eyebrow="South Jersey · Atlantic County"
+        heading="We know these streets. We grew up here."
+        position="[object-position:center_70%]"
+      />
 
       {/* CTA */}
       <section className="py-16 bg-navy-900 text-center">
