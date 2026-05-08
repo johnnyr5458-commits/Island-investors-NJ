@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { twMerge } from "tailwind-merge";
+import { trackCTAClick } from "@/lib/analytics";
 
 interface CTAButtonProps {
   href: string;
@@ -8,6 +11,7 @@ interface CTAButtonProps {
   size?: "sm" | "md" | "lg";
   className?: string;
   external?: boolean;
+  trackingLabel?: string;
 }
 
 const base =
@@ -34,19 +38,21 @@ export default function CTAButton({
   size = "md",
   className,
   external,
+  trackingLabel,
 }: CTAButtonProps) {
   const classes = twMerge(base, variants[variant], sizes[size], className);
+  const handleClick = () => { if (trackingLabel) trackCTAClick(trackingLabel); };
 
   if (external) {
     return (
-      <a href={href} className={classes} target="_blank" rel="noopener noreferrer">
+      <a href={href} className={classes} target="_blank" rel="noopener noreferrer" onClick={handleClick}>
         {children}
       </a>
     );
   }
 
   return (
-    <Link href={href} className={classes}>
+    <Link href={href} className={classes} onClick={handleClick}>
       {children}
     </Link>
   );

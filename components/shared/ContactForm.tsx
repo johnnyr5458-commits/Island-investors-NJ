@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import TrustBlock from "./TrustBlock";
+import { trackFormSubmit } from "@/lib/analytics";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -26,6 +27,7 @@ export default function ContactForm({ dark = false }: { dark?: boolean }) {
       });
       const json = await res.json().catch(() => ({}));
       if (res.ok && json.ok) {
+        trackFormSubmit("seller_contact");
         setStatus("success");
         form.reset();
       } else {

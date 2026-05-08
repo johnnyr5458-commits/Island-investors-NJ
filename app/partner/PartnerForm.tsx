@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import TrustBlock from "@/components/shared/TrustBlock";
+import { trackFormSubmit } from "@/lib/analytics";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -23,6 +24,7 @@ export default function PartnerForm() {
       });
       const json = await res.json().catch(() => ({}));
       if (res.ok && json.ok) {
+        trackFormSubmit("partner_inquiry");
         setStatus("success");
         form.reset();
       } else {

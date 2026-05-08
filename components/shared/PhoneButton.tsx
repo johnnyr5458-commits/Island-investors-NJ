@@ -1,5 +1,7 @@
 "use client";
 
+import { trackPhoneCall, trackCTAClick } from "@/lib/analytics";
+
 export default function PhoneButton() {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 md:hidden shadow-[0_-4px_20px_rgba(0,0,0,0.3)]">
@@ -8,6 +10,7 @@ export default function PhoneButton() {
       <div className="flex">
         <a
           href="tel:+16098004303"
+          onClick={() => trackPhoneCall("sticky_bar")}
           className="flex-1 bg-navy-900 text-white font-sans font-bold text-sm py-4 text-center tracking-wide flex items-center justify-center gap-2 hover:bg-navy-800 transition-colors"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -17,6 +20,7 @@ export default function PhoneButton() {
         </a>
         <a
           href="/contact"
+          onClick={() => trackCTAClick("sticky_bar_see_options")}
           className="flex-1 bg-gold-500 hover:bg-gold-400 text-white font-sans font-bold text-sm py-4 text-center tracking-wide transition-colors flex items-center justify-center gap-2"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

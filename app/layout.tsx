@@ -6,6 +6,7 @@ import Footer from "@/components/layout/Footer";
 import PhoneButton from "@/components/shared/PhoneButton";
 import SchemaMarkup from "@/components/shared/SchemaMarkup";
 import { localBusinessSchema } from "@/lib/schema";
+import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -72,6 +73,7 @@ export default function RootLayout({
         <SchemaMarkup schema={localBusinessSchema()} />
       </head>
       <body className="font-sans antialiased">
+        <GoogleAnalytics />
         <Header />
         <main>{children}</main>
         <Footer />
