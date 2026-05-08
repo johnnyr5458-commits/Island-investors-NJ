@@ -44,45 +44,72 @@ export default function HQLoginPage() {
     setError(null);
     setLoading(true);
 
-    const supabase = createClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (signInError) {
-      setError("Invalid credentials. Check your email and password.");
+    // Safety net — button never stays stuck forever
+    const timeout = setTimeout(() => {
       setLoading(false);
-      return;
+      setError("Request timed out. Check your connection and try again.");
+    }, 12000);
+
+    let navigating = false;
+
+    try {
+      const supabase = createClient();
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+      if (signInError) {
+        setError("Invalid email or password.");
+        return;
+      }
+
+      const { data: authData, error: userError } = await supabase.auth.getUser();
+      const user = authData?.user;
+      if (userError || !user) {
+        setError("Signed in but could not retrieve user. Try again.");
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role, status")
+        .eq("id", user.id)
+        .single();
+
+      if (!profile) {
+        await supabase.auth.signOut();
+        // PGRST116 = no rows returned (profile row doesn't exist)
+        const msg = (profileError as { code?: string } | null)?.code === "PGRST116"
+          ? "Account authenticated but no HQ profile assigned. Ask the admin to create your profile."
+          : `Profile lookup failed: ${profileError?.message ?? "unknown error"}`;
+        setError(msg);
+        return;
+      }
+
+      if (profile.status === "removed") {
+        await supabase.auth.signOut();
+        setError("This account has been removed. Contact the administrator.");
+        return;
+      }
+
+      if (profile.status === "paused") {
+        await supabase.auth.signOut();
+        setError("This account is paused. Contact the administrator.");
+        return;
+      }
+
+      if (profile.status === "pending") {
+        await supabase.auth.signOut();
+        setError("Account pending approval. Contact the administrator.");
+        return;
+      }
+
+      // status === "active" — navigate; keep loading=true during page transition
+      navigating = true;
+      window.location.href = profile.role === "partner" ? "/partner/dashboard" : "/hq/dashboard";
+
+    } finally {
+      clearTimeout(timeout);
+      if (!navigating) setLoading(false);
     }
-
-    // Fetch profile to determine where to redirect
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setError("Authentication failed. Please try again."); setLoading(false); return; }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role, status")
-      .eq("id", user.id)
-      .single() as { data: { role: string; status: string } | null; error: unknown };
-
-    if (!profile || profile.status === "removed") {
-      await supabase.auth.signOut();
-      setError("Your account has been removed. Contact the administrator.");
-      setLoading(false);
-      return;
-    }
-
-    if (profile.status !== "active") {
-      await supabase.auth.signOut();
-      setError("Your account is pending approval. Contact the administrator.");
-      setLoading(false);
-      return;
-    }
-
-    // Full reload ensures middleware picks up the fresh session cookie
-    window.location.href =
-      profile.role === "partner" ? "/partner/dashboard" : "/hq/dashboard";
   }
 
   async function handleForgotPassword(e: React.FormEvent) {
