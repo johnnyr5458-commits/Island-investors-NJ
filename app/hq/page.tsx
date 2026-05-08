@@ -118,8 +118,9 @@ export default function HQLoginPage() {
     setLoading(true);
 
     const supabase = createClient();
+    const base = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/hq/reset-password`,
+      redirectTo: `${base}/hq/reset-password`,
     });
 
     if (resetError) {
@@ -286,7 +287,7 @@ export default function HQLoginPage() {
                   <button
                     type="button"
                     onClick={() => { setView("forgot"); setError(null); }}
-                    className="font-sans text-[10px] text-silver-700 hover:text-silver-400 transition-colors"
+                    className="font-sans text-[11px] text-silver-500 hover:text-gold-400 transition-colors underline underline-offset-2"
                   >
                     Forgot password?
                   </button>
