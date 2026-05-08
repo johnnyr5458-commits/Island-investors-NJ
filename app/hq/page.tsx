@@ -217,7 +217,7 @@ export default function HQLoginPage() {
             <motion.h1 variants={item} className="font-display text-[1.65rem] font-bold text-white text-center leading-tight mb-3">
               Island Investors HQ
             </motion.h1>
-            <motion.p variants={item} className="font-sans text-xs text-silver-500 text-center leading-relaxed mb-7">
+            <motion.p variants={item} className="font-sans text-xs text-slate-400 text-center leading-relaxed mb-7">
               {view === "forgot"
                 ? "Enter your email and we'll send a reset link."
                 : <>Authorized team access only.<br />This workspace is not part of the public website.</>
@@ -231,7 +231,7 @@ export default function HQLoginPage() {
               <form onSubmit={handleLogin}>
                 <div className="space-y-4 mb-5">
                   <div>
-                    <label className="block font-sans text-[10px] font-semibold uppercase tracking-widest text-silver-600 mb-2">
+                    <label className="block font-sans text-[10px] font-semibold uppercase tracking-widest text-slate-300 mb-2">
                       Email
                     </label>
                     <input
@@ -240,14 +240,14 @@ export default function HQLoginPage() {
                       onChange={e => setEmail(e.target.value)}
                       required
                       placeholder="team@islandinvestorsnj.com"
-                      className="w-full px-4 py-3 text-sm font-sans placeholder:text-silver-700 outline-none transition-all"
+                      className="w-full px-4 py-3 text-sm font-sans placeholder:text-slate-500 outline-none transition-all"
                       style={inputStyle}
                       onFocus={e => Object.assign(e.currentTarget.style, inputFocusStyle)}
                       onBlur={e => Object.assign(e.currentTarget.style, inputStyle)}
                     />
                   </div>
                   <div>
-                    <label className="block font-sans text-[10px] font-semibold uppercase tracking-widest text-silver-600 mb-2">
+                    <label className="block font-sans text-[10px] font-semibold uppercase tracking-widest text-slate-300 mb-2">
                       Password
                     </label>
                     <input
@@ -256,7 +256,7 @@ export default function HQLoginPage() {
                       onChange={e => setPassword(e.target.value)}
                       required
                       placeholder="••••••••••••"
-                      className="w-full px-4 py-3 text-sm font-sans placeholder:text-silver-700 outline-none transition-all"
+                      className="w-full px-4 py-3 text-sm font-sans placeholder:text-slate-500 outline-none transition-all"
                       style={inputStyle}
                       onFocus={e => Object.assign(e.currentTarget.style, inputFocusStyle)}
                       onBlur={e => Object.assign(e.currentTarget.style, inputStyle)}
@@ -287,7 +287,10 @@ export default function HQLoginPage() {
                   <button
                     type="button"
                     onClick={() => { setView("forgot"); setError(null); }}
-                    className="font-sans text-[11px] text-silver-500 hover:text-gold-400 transition-colors underline underline-offset-2"
+                    className="font-sans text-[12px] font-medium transition-colors duration-200"
+                    style={{ color: "rgba(200,150,42,0.75)" }}
+                    onMouseEnter={e => (e.currentTarget.style.color = "rgba(200,150,42,1)")}
+                    onMouseLeave={e => (e.currentTarget.style.color = "rgba(200,150,42,0.75)")}
                   >
                     Forgot password?
                   </button>
@@ -337,7 +340,7 @@ export default function HQLoginPage() {
                   <button
                     type="button"
                     onClick={() => { setView("login"); setError(null); }}
-                    className="font-sans text-[10px] text-silver-700 hover:text-silver-400 transition-colors"
+                    className="font-sans text-[12px] text-slate-400 hover:text-slate-200 transition-colors duration-200"
                   >
                     ← Back to login
                   </button>
@@ -360,7 +363,7 @@ export default function HQLoginPage() {
 
             {/* Security notice */}
             {view === "login" && (
-              <p className="font-sans text-[10px] text-silver-700 text-center mt-5 leading-relaxed">
+              <p className="font-sans text-[10px] text-slate-500 text-center mt-5 leading-relaxed">
                 Private internal access only &nbsp;·&nbsp; Authorized Access Only
               </p>
             )}
@@ -375,7 +378,7 @@ export default function HQLoginPage() {
 
         {/* Back to site */}
         <motion.div variants={item} className="mt-7 text-center">
-          <Link href="/" className="font-sans text-xs text-silver-700 hover:text-silver-400 transition-colors duration-300">
+          <Link href="/" className="font-sans text-xs text-slate-400 hover:text-slate-200 transition-colors duration-300">
             ← Return to IslandInvestorsNJ.com
           </Link>
         </motion.div>
