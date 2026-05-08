@@ -75,9 +75,15 @@ export default function BlogPage() {
                       {post.description}
                     </p>
                     <div className="mt-6 flex items-center justify-between border-t border-silver-100 pt-4">
-                      <span className="text-xs text-gray-400 font-sans">
-                        {format(new Date(post.date), "MMMM d, yyyy")}
-                      </span>
+                      <div className="flex items-center gap-2 text-xs text-gray-400 font-sans">
+                        <span>{format(new Date(post.date), "MMMM d, yyyy")}</span>
+                        {post.readTime && (
+                          <>
+                            <span aria-hidden="true">·</span>
+                            <span>{post.readTime}</span>
+                          </>
+                        )}
+                      </div>
                       <span className="text-xs font-bold text-gold-500 uppercase tracking-wider group-hover:text-gold-400 transition-colors">
                         Read →
                       </span>

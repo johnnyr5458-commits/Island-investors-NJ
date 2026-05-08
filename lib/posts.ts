@@ -10,6 +10,7 @@ export interface PostMeta {
   author: string;
   tags: string[];
   image?: string;
+  readTime?: string;
 }
 
 export interface Post extends PostMeta {
@@ -38,6 +39,7 @@ export function getAllPosts(): PostMeta[] {
         author: data.author || "Island Investors NJ",
         tags: data.tags || [],
         image: data.image,
+        readTime: data.readTime,
       } satisfies PostMeta;
     })
     .sort(
@@ -65,6 +67,7 @@ export function getPost(slug: string): Post | null {
     author: data.author || "Island Investors NJ",
     tags: data.tags || [],
     image: data.image,
+    readTime: data.readTime,
     content,
   };
 }

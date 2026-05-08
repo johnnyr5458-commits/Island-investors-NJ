@@ -74,10 +74,16 @@ export default async function BlogPostPage({ params }: Props) {
             {post.title}
           </h1>
           <p className="text-silver-300 text-lg mb-6">{post.description}</p>
-          <div className="flex items-center gap-4 text-sm text-silver-400 font-sans">
+          <div className="flex flex-wrap items-center gap-3 text-sm text-silver-400 font-sans">
             <span>By {post.author}</span>
-            <span>·</span>
+            <span aria-hidden="true">·</span>
             <time dateTime={post.date}>{format(new Date(post.date), "MMMM d, yyyy")}</time>
+            {post.readTime && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span>{post.readTime}</span>
+              </>
+            )}
           </div>
         </div>
       </section>
