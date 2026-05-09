@@ -11,6 +11,7 @@ const navLinks = [
   { label: "About", href: "/about" },
   { label: "Partners", href: "/partner" },
   { label: "Blog", href: "/blog" },
+  { label: "Two Sides", href: "/two-sides-of-the-same-coin" },
 ];
 
 const situationLinks = [
