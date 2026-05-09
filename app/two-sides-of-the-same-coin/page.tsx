@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { buildMetadata } from "@/lib/metadata";
 import { getAllInsights } from "@/lib/insights";
@@ -17,11 +18,21 @@ export default function TwoSidesPage() {
   return (
     <div>
       {/* Hero */}
-      <section
-        className="pt-36 pb-20"
-        style={{ background: "linear-gradient(160deg, #060E1A 0%, #112540 100%)" }}
-      >
-        <div className="section-container max-w-3xl">
+      <section className="pt-36 pb-20 relative overflow-hidden">
+        <Image
+          src="/CAFE.jpg"
+          alt=""
+          fill
+          className="object-cover object-center"
+          priority
+          aria-hidden="true"
+        />
+        <div
+          className="absolute inset-0"
+          style={{ background: "linear-gradient(160deg, rgba(6,14,26,0.84) 0%, rgba(17,37,64,0.78) 100%)" }}
+          aria-hidden="true"
+        />
+        <div className="section-container max-w-3xl relative z-10">
           <div className="flex items-center gap-3 mb-6">
             <span className="block w-8 h-px bg-gold-500" aria-hidden="true" />
             <p className="font-sans text-xs font-bold uppercase tracking-[0.2em] text-gold-400">
