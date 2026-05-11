@@ -111,7 +111,7 @@ export async function getAllInsightsMerged(): Promise<InsightMeta[]> {
 
   const dbPosts    = await getDbPosts(false);
   const dbMapped   = dbPosts
-    .filter(p => (p.categories ?? []).includes("two-sides") && !fileSlugs.has(p.slug))
+    .filter(p => (p.categories ?? []).includes("Two Sides") && !fileSlugs.has(p.slug))
     .map(dbPostToInsightMeta);
 
   return [...filePosts, ...dbMapped].sort(
@@ -126,7 +126,7 @@ export async function getInsightMerged(slug: string): Promise<Insight | null> {
 
   const dbPost = await getDbPost(slug);
   if (!dbPost || dbPost.status !== "published") return null;
-  if (!(dbPost.categories ?? []).includes("two-sides")) return null;
+  if (!(dbPost.categories ?? []).includes("Two Sides")) return null;
 
   return dbPostToInsight(dbPost);
 }

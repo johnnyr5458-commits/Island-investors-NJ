@@ -7,7 +7,7 @@ import type { BlogPost } from "@/lib/supabase/types";
 // ─── helpers ────────────────────────────────────────────────────────────────
 
 const CATEGORIES: { id: string; label: string }[] = [
-  { id: "two-sides",      label: "Two Sides of the Same Coin" },
+  { id: "Two Sides",      label: "Two Sides" },
   { id: "for-homeowners", label: "For Homeowners" },
   { id: "for-investors",  label: "For Investors" },
 ];
