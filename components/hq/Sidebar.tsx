@@ -49,7 +49,7 @@ export default function Sidebar({ profile }: { profile: Profile | null }) {
 
   return (
     <aside
-      className="w-60 shrink-0 flex flex-col sticky top-0 h-screen border-r overflow-y-auto"
+      className="hidden md:flex md:flex-col w-60 shrink-0 sticky top-0 h-screen border-r overflow-y-auto"
       style={{ background: "#050d19", borderColor: "rgba(255,255,255,0.05)" }}
     >
       {/* Logo */}
