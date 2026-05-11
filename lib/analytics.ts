@@ -6,7 +6,7 @@
 declare global {
   interface Window {
     gtag: (...args: unknown[]) => void;
-    dataLayer: unknown[];
+    // dataLayer is declared by @next/third-parties
     // fbq: (...args: unknown[]) => void;       // Meta Pixel — uncomment when ready
     // _hsq: unknown[][];                        // HubSpot — uncomment when ready
   }
