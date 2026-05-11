@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { buildMetadata } from "@/lib/metadata";
-import { getAllInsights } from "@/lib/insights";
+import { getAllInsightsMerged } from "@/lib/insights";
 import { format } from "date-fns";
 
 export const metadata: Metadata = buildMetadata({
@@ -12,8 +12,10 @@ export const metadata: Metadata = buildMetadata({
   path: "/two-sides-of-the-same-coin",
 });
 
-export default function TwoSidesPage() {
-  const posts = getAllInsights();
+export const revalidate = 3600;
+
+export default async function TwoSidesPage() {
+  const posts = await getAllInsightsMerged();
 
   return (
     <div>
@@ -92,34 +94,46 @@ export default function TwoSidesPage() {
                     href={`/two-sides-of-the-same-coin/${post.slug}`}
                     className="group bg-white border border-silver-100 hover:border-gold-500 hover:shadow-md transition-all duration-300 hover:-translate-y-1 flex flex-col"
                   >
-                    {/* Featured image placeholder */}
-                    <div
-                      className="h-44 relative overflow-hidden flex-shrink-0"
-                      style={{
-                        background:
-                          "linear-gradient(160deg, #060E1A 0%, #1A3A5C 100%)",
-                      }}
-                      aria-hidden="true"
-                    >
-                      <div
-                        className="absolute inset-0"
-                        style={{
-                          backgroundImage:
-                            "radial-gradient(ellipse at 25% 50%, rgba(200,150,42,0.12) 0%, transparent 60%), radial-gradient(ellipse at 75% 50%, rgba(26,58,92,0.6) 0%, transparent 60%)",
-                        }}
-                      />
-                      <div
-                        className="absolute bottom-0 left-0 right-0 h-px opacity-40"
-                        style={{
-                          background:
-                            "linear-gradient(90deg, transparent, #C8962A, transparent)",
-                        }}
-                      />
-                      <div className="absolute bottom-4 left-5">
-                        <span className="text-xs font-bold uppercase tracking-wider text-gold-400 font-sans">
-                          Two Sides of the Same Coin
-                        </span>
-                      </div>
+                    {/* Card image — real photo if available, branded gradient fallback */}
+                    <div className="h-44 relative overflow-hidden flex-shrink-0">
+                      {post.image ? (
+                        <>
+                          <img
+                            src={post.image}
+                            alt={post.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            style={{ objectPosition: post.imagePosition ?? "center" }}
+                          />
+                          <div className="absolute bottom-4 left-5">
+                            <span className="text-xs font-bold uppercase tracking-wider text-gold-400 font-sans drop-shadow">
+                              Two Sides of the Same Coin
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <div
+                          className="w-full h-full"
+                          style={{ background: "linear-gradient(160deg, #060E1A 0%, #1A3A5C 100%)" }}
+                          aria-hidden="true"
+                        >
+                          <div
+                            className="absolute inset-0"
+                            style={{
+                              backgroundImage:
+                                "radial-gradient(ellipse at 25% 50%, rgba(200,150,42,0.12) 0%, transparent 60%), radial-gradient(ellipse at 75% 50%, rgba(26,58,92,0.6) 0%, transparent 60%)",
+                            }}
+                          />
+                          <div
+                            className="absolute bottom-0 left-0 right-0 h-px opacity-40"
+                            style={{ background: "linear-gradient(90deg, transparent, #C8962A, transparent)" }}
+                          />
+                          <div className="absolute bottom-4 left-5">
+                            <span className="text-xs font-bold uppercase tracking-wider text-gold-400 font-sans">
+                              Two Sides of the Same Coin
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="p-7 flex flex-col flex-1">

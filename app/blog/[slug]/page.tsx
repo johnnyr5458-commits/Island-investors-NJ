@@ -1,11 +1,36 @@
 import type { Metadata } from "next";
+import type { CSSProperties } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { MDXRemote } from "next-mdx-remote/rsc";
-import { getAllPosts, getPost } from "@/lib/posts";
+import { getAllPosts, getPostMerged } from "@/lib/posts";
 import { articleSchema } from "@/lib/schema";
 import SchemaMarkup from "@/components/shared/SchemaMarkup";
 import { format } from "date-fns";
+
+function heroImgStyle(rotation: number, position: string): CSSProperties {
+  const swapped = rotation === 90 || rotation === 270;
+  if (!swapped) {
+    return {
+      width: "100%",
+      height: "420px",
+      objectFit: "cover",
+      objectPosition: position,
+      transform: rotation ? `rotate(${rotation}deg)` : undefined,
+      display: "block",
+    };
+  }
+  return {
+    position: "absolute",
+    width: "420px",
+    height: "100vw",
+    top: "50%",
+    left: "50%",
+    transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+    objectFit: "cover",
+    objectPosition: position,
+  };
+}
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -18,25 +43,29 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const post = getPost(slug);
+  const post = await getPostMerged(slug);
   if (!post) return {};
 
+  const metaTitle = post.seoTitle || post.title;
+  const metaDesc  = post.seoDescription || post.description;
+
   return {
-    title: post.title,
-    description: post.description,
+    title: metaTitle,
+    description: metaDesc,
     alternates: { canonical: `https://islandinvestorsnj.com/blog/${slug}` },
     openGraph: {
-      title: post.title,
-      description: post.description,
+      title: metaTitle,
+      description: metaDesc,
       type: "article",
       publishedTime: post.date,
+      ...(post.image ? { images: [post.image] } : {}),
     },
   };
 }
 
 export default async function BlogPostPage({ params }: Props) {
   const { slug } = await params;
-  const post = getPost(slug);
+  const post = await getPostMerged(slug);
   if (!post) notFound();
 
   const schema = articleSchema({
@@ -77,7 +106,9 @@ export default async function BlogPostPage({ params }: Props) {
           <div className="flex flex-wrap items-center gap-3 text-sm text-silver-400 font-sans">
             <span>By {post.author}</span>
             <span aria-hidden="true">·</span>
-            <time dateTime={post.date}>{format(new Date(post.date), "MMMM d, yyyy")}</time>
+            {post.date && (
+              <time dateTime={post.date}>{format(new Date(post.date), "MMMM d, yyyy")}</time>
+            )}
             {post.readTime && (
               <>
                 <span aria-hidden="true">·</span>
@@ -88,13 +119,29 @@ export default async function BlogPostPage({ params }: Props) {
         </div>
       </section>
 
+      {/* Hero image (when present) */}
+      {post.image && (
+        <div className="section-container max-w-5xl pt-10 -mb-6">
+          <div style={{ position: "relative", height: "420px", overflow: "hidden", borderRadius: "2px" }}>
+            <img
+              src={post.image}
+              alt={post.title}
+              style={heroImgStyle(post.imageRotation ?? 0, post.imagePosition ?? "center")}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Content */}
       <section className="py-16">
         <div className="section-container">
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-12 max-w-5xl">
             {/* Article */}
             <article className="prose prose-lg prose-gray max-w-none prose-headings:font-display prose-headings:text-navy-900 prose-a:text-gold-500 prose-a:no-underline hover:prose-a:text-gold-400 prose-strong:text-navy-800">
-              <MDXRemote source={post.content} />
+              <MDXRemote
+                source={post.content}
+                options={post.source === "db" ? { mdxOptions: { format: "md" } } : undefined}
+              />
             </article>
 
             {/* Sidebar */}
@@ -131,11 +178,11 @@ export default async function BlogPostPage({ params }: Props) {
                 </h3>
                 <ul className="space-y-2">
                   {[
-                    { label: "Foreclosure Help", href: "/foreclosure-help" },
+                    { label: "Foreclosure Help",   href: "/foreclosure-help" },
                     { label: "Inherited Property", href: "/inherited-property" },
-                    { label: "Vacant Property", href: "/vacant-property" },
-                    { label: "Tax Sale Help", href: "/tax-sale-help" },
-                    { label: "Sell Fast", href: "/sell-your-house-fast" },
+                    { label: "Vacant Property",    href: "/vacant-property" },
+                    { label: "Tax Sale Help",       href: "/tax-sale-help" },
+                    { label: "Sell Fast",           href: "/sell-your-house-fast" },
                   ].map((link) => (
                     <li key={link.href}>
                       <Link

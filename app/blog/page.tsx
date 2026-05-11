@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { buildMetadata } from "@/lib/metadata";
-import { getAllPosts } from "@/lib/posts";
+import { getAllPostsMerged } from "@/lib/posts";
 import { format } from "date-fns";
+
+export const revalidate = 3600;
 
 export const metadata: Metadata = buildMetadata({
   title: "South Jersey Real Estate Blog",
@@ -11,8 +13,8 @@ export const metadata: Metadata = buildMetadata({
   path: "/blog",
 });
 
-export default function BlogPage() {
-  const posts = getAllPosts();
+export default async function BlogPage() {
+  const posts = await getAllPostsMerged();
 
   return (
     <div>
@@ -57,6 +59,16 @@ export default function BlogPage() {
                   href={`/blog/${post.slug}`}
                   className="group bg-white border border-silver-100 hover:border-gold-500 hover:shadow-md transition-all duration-300 hover:-translate-y-1 flex flex-col"
                 >
+                  {post.image && (
+                    <div className="overflow-hidden">
+                      <img
+                        src={post.image}
+                        alt={post.title}
+                        className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-500"
+                        style={{ objectPosition: post.imagePosition ?? "center" }}
+                      />
+                    </div>
+                  )}
                   <div className="p-7 flex flex-col flex-1">
                     <div className="flex items-center gap-2 mb-4">
                       {post.tags.slice(0, 1).map((tag) => (
@@ -76,7 +88,9 @@ export default function BlogPage() {
                     </p>
                     <div className="mt-6 flex items-center justify-between border-t border-silver-100 pt-4">
                       <div className="flex items-center gap-2 text-xs text-gray-400 font-sans">
-                        <span>{format(new Date(post.date), "MMMM d, yyyy")}</span>
+                        {post.date && (
+                          <span>{format(new Date(post.date), "MMMM d, yyyy")}</span>
+                        )}
                         {post.readTime && (
                           <>
                             <span aria-hidden="true">·</span>

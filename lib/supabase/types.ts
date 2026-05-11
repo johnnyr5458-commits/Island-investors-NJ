@@ -16,6 +16,27 @@ export interface Profile {
   created_at: string;
 }
 
+export interface BlogPost {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  content: string;
+  image_url: string | null;
+  image_rotation: number;
+  image_position: string;
+  seo_title: string | null;
+  seo_description: string | null;
+  categories: string[];
+  tags: string[];
+  status: "draft" | "published";
+  author: string;
+  read_time: string | null;
+  created_at: string;
+  updated_at: string;
+  published_at: string | null;
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -23,6 +44,11 @@ export type Database = {
         Row: Profile;
         Insert: Partial<Profile> & { id: string };
         Update: Partial<Profile>;
+      };
+      blog_posts: {
+        Row: BlogPost;
+        Insert: Partial<BlogPost> & { slug: string; title: string };
+        Update: Partial<BlogPost>;
       };
     };
   };

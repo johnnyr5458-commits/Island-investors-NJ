@@ -1,11 +1,22 @@
 import type { Metadata } from "next";
+import type { CSSProperties } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { MDXRemote } from "next-mdx-remote/rsc";
-import { getAllInsights, getInsight } from "@/lib/insights";
+import { getAllInsights, getInsightMerged } from "@/lib/insights";
 import { articleSchema, breadcrumbSchema } from "@/lib/schema";
 import SchemaMarkup from "@/components/shared/SchemaMarkup";
 import { format } from "date-fns";
+
+function heroImgStyle(rotation: number, position: string): CSSProperties {
+  const swapped = rotation === 90 || rotation === 270;
+  if (!swapped) {
+    return { width: "100%", height: "100%", objectFit: "cover", objectPosition: position,
+      transform: rotation ? `rotate(${rotation}deg)` : undefined, display: "block" };
+  }
+  return { position: "absolute", width: "260px", height: "100vw", top: "50%", left: "50%",
+    transform: `translate(-50%, -50%) rotate(${rotation}deg)`, objectFit: "cover", objectPosition: position };
+}
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -18,18 +29,21 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const post = getInsight(slug);
+  const post = await getInsightMerged(slug);
   if (!post) return {};
 
+  const metaTitle = post.seoTitle || post.title;
+  const metaDesc  = post.seoDescription || post.description;
+
   return {
-    title: post.title,
-    description: post.description,
+    title: metaTitle,
+    description: metaDesc,
     alternates: {
       canonical: `https://islandinvestorsnj.com/two-sides-of-the-same-coin/${slug}`,
     },
     openGraph: {
-      title: post.title,
-      description: post.description,
+      title: metaTitle,
+      description: metaDesc,
       type: "article",
       publishedTime: post.date,
     },
@@ -38,7 +52,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function InsightPage({ params }: Props) {
   const { slug } = await params;
-  const post = getInsight(slug);
+  const post = await getInsightMerged(slug);
   if (!post) notFound();
 
   const seoSchemas = [
@@ -125,51 +139,52 @@ export default async function InsightPage({ params }: Props) {
         </div>
       </section>
 
-      {/* Featured image placeholder */}
+      {/* Hero image — real photo if available, branded gradient fallback */}
       <div className="section-container max-w-5xl -mt-px">
-        <div
-          className="w-full h-52 md:h-64 relative overflow-hidden"
-          style={{
-            background: "linear-gradient(160deg, #060E1A 0%, #1A3A5C 100%)",
-          }}
-          role="img"
-          aria-label="Two Sides of the Same Coin — Island Investors NJ"
-        >
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage:
-                "radial-gradient(ellipse at 15% 50%, rgba(200,150,42,0.12) 0%, transparent 55%), radial-gradient(ellipse at 85% 50%, rgba(26,58,92,0.5) 0%, transparent 55%)",
-            }}
-            aria-hidden="true"
-          />
-          {/* Subtle center divider — the "two sides" motif */}
-          <div
-            className="absolute top-6 bottom-6 left-1/2 -translate-x-px w-px opacity-20"
-            style={{
-              background:
-                "linear-gradient(to bottom, transparent, #C8962A 30%, #C8962A 70%, transparent)",
-            }}
-            aria-hidden="true"
-          />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center px-6">
-              <p className="font-sans text-xs font-bold uppercase tracking-[0.25em] text-gold-500 mb-2">
-                Two Sides of the Same Coin
-              </p>
-              <p className="font-display text-silver-400 text-sm">
-                Island Investors NJ &nbsp;·&nbsp; South Jersey Real Estate Education
-              </p>
+        <div className="w-full h-52 md:h-64 relative overflow-hidden">
+          {post.image ? (
+            <img
+              src={post.image}
+              alt={post.title}
+              style={heroImgStyle(post.imageRotation ?? 0, post.imagePosition ?? "center")}
+            />
+          ) : (
+            <div
+              className="w-full h-full"
+              style={{ background: "linear-gradient(160deg, #060E1A 0%, #1A3A5C 100%)" }}
+              role="img"
+              aria-label="Two Sides of the Same Coin — Island Investors NJ"
+            >
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage:
+                    "radial-gradient(ellipse at 15% 50%, rgba(200,150,42,0.12) 0%, transparent 55%), radial-gradient(ellipse at 85% 50%, rgba(26,58,92,0.5) 0%, transparent 55%)",
+                }}
+                aria-hidden="true"
+              />
+              <div
+                className="absolute top-6 bottom-6 left-1/2 -translate-x-px w-px opacity-20"
+                style={{ background: "linear-gradient(to bottom, transparent, #C8962A 30%, #C8962A 70%, transparent)" }}
+                aria-hidden="true"
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center px-6">
+                  <p className="font-sans text-xs font-bold uppercase tracking-[0.25em] text-gold-500 mb-2">
+                    Two Sides of the Same Coin
+                  </p>
+                  <p className="font-display text-silver-400 text-sm">
+                    Island Investors NJ &nbsp;·&nbsp; South Jersey Real Estate Education
+                  </p>
+                </div>
+              </div>
+              <div
+                className="absolute bottom-0 left-0 right-0 h-px"
+                style={{ background: "linear-gradient(90deg, transparent, rgba(200,150,42,0.3), transparent)" }}
+                aria-hidden="true"
+              />
             </div>
-          </div>
-          <div
-            className="absolute bottom-0 left-0 right-0 h-px"
-            style={{
-              background:
-                "linear-gradient(90deg, transparent, rgba(200,150,42,0.3), transparent)",
-            }}
-            aria-hidden="true"
-          />
+          )}
         </div>
       </div>
 
@@ -189,7 +204,10 @@ export default async function InsightPage({ params }: Props) {
                 prose-strong:text-navy-800
                 prose-hr:border-silver-100 prose-hr:my-10"
             >
-              <MDXRemote source={post.content} />
+              <MDXRemote
+                source={post.content}
+                options={post.source === "db" ? { mdxOptions: { format: "md" } } : undefined}
+              />
             </article>
 
             {/* Sidebar */}
