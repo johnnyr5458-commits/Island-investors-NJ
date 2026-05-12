@@ -17,10 +17,10 @@ export default function PartnerForm() {
     const form = e.currentTarget;
     setStatus("submitting");
     try {
-      const res = await fetch("https://formspree.io/f/mpqbjlob", {
+      const res = await fetch("/api/partner", {
         method: "POST",
-        body: new FormData(form),
-        headers: { Accept: "application/json" },
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(Object.fromEntries(new FormData(form))),
       });
       const json = await res.json().catch(() => ({}));
       if (res.ok && json.ok) {
@@ -28,7 +28,7 @@ export default function PartnerForm() {
         setStatus("success");
         form.reset();
       } else {
-        console.error("[PartnerForm] Formspree error:", res.status, json);
+        console.error("[PartnerForm] Submission error:", res.status, json);
         setStatus("error");
       }
     } catch (err) {
@@ -55,7 +55,10 @@ export default function PartnerForm() {
 
   return (
     <form onSubmit={handleSubmit} className="bg-navy-800 p-8 md:p-10 space-y-6 relative">
-      <input type="hidden" name="form_type" value="partner" />
+      {/* Honeypot — hidden from users, filled by bots */}
+      <div style={{ display: "none" }} aria-hidden="true">
+        <input name="website" type="text" tabIndex={-1} autoComplete="off" />
+      </div>
       <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-gold-500/50 to-transparent" />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
