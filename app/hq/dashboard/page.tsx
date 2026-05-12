@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import TopBar from "@/components/hq/TopBar";
 import StatCard from "@/components/hq/StatCard";
+import { HQ_TEXT, HQ_GOLD } from "@/lib/hq-colors";
 
 function ChartPlaceholder({ label }: { label: string }) {
   return (
@@ -12,10 +13,10 @@ function ChartPlaceholder({ label }: { label: string }) {
       }}
     >
       <div className="flex items-center justify-between mb-4">
-        <span className="font-sans text-xs font-semibold text-silver-500 uppercase tracking-wider">{label}</span>
+        <span className="font-sans text-xs font-semibold uppercase tracking-wider" style={{ color: HQ_TEXT.muted }}>{label}</span>
         <span
           className="font-sans text-[9px] font-bold uppercase tracking-wider px-2 py-1"
-          style={{ background: "rgba(200,150,42,0.08)", border: "1px solid rgba(200,150,42,0.15)", color: "rgba(200,150,42,0.65)" }}
+          style={{ background: HQ_GOLD.bgTint, border: `1px solid ${HQ_GOLD.border}`, color: HQ_GOLD.dim }}
         >
           Pending Connection
         </span>
@@ -23,11 +24,11 @@ function ChartPlaceholder({ label }: { label: string }) {
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
           <div className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-3" style={{ background: "rgba(200,150,42,0.06)", border: "1px solid rgba(200,150,42,0.12)" }}>
-            <svg className="w-5 h-5 text-gold-500 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <svg className="w-5 h-5 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} style={{ color: HQ_GOLD.dim }}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           </div>
-          <p className="font-sans text-[11px] text-silver-700">Connect your data source to activate</p>
+          <p className="font-sans text-[11px]" style={{ color: HQ_TEXT.helper }}>Connect your data source to activate</p>
         </div>
       </div>
     </div>
@@ -35,13 +36,13 @@ function ChartPlaceholder({ label }: { label: string }) {
 }
 
 function ActivityItem({ time, text, type }: { time: string; text: string; type: "lead" | "partner" | "system" }) {
-  const dot = type === "lead" ? "#34d399" : type === "partner" ? "rgba(200,150,42,0.85)" : "#64748b";
+  const dot = type === "lead" ? "#34d399" : type === "partner" ? HQ_GOLD.text : "#64748b";
   return (
     <div className="flex items-start gap-3 py-3 border-b last:border-0" style={{ borderColor: "rgba(255,255,255,0.04)" }}>
       <div className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0" style={{ background: dot }} />
       <div className="flex-1 min-w-0">
-        <p className="font-sans text-xs text-silver-400 leading-relaxed">{text}</p>
-        <p className="font-sans text-[10px] text-silver-700 mt-0.5">{time}</p>
+        <p className="font-sans text-xs leading-relaxed" style={{ color: HQ_TEXT.secondary }}>{text}</p>
+        <p className="font-sans text-[10px] mt-0.5" style={{ color: HQ_TEXT.helper }}>{time}</p>
       </div>
     </div>
   );
@@ -118,7 +119,7 @@ export default async function DashboardPage() {
             style={{ background: "rgba(8,22,40,0.55)", border: "1px solid rgba(255,255,255,0.06)" }}
           >
             <div className="flex items-center justify-between mb-4">
-              <span className="font-sans text-xs font-semibold text-silver-500 uppercase tracking-wider">Recent Activity</span>
+              <span className="font-sans text-xs font-semibold uppercase tracking-wider" style={{ color: HQ_TEXT.muted }}>Recent Activity</span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             </div>
             <ActivityItem time="Just now" text="System initialized — HQ is live and operational." type="system" />
@@ -132,7 +133,7 @@ export default async function DashboardPage() {
             className="p-5"
             style={{ background: "rgba(8,22,40,0.55)", border: "1px solid rgba(255,255,255,0.06)" }}
           >
-            <span className="font-sans text-xs font-semibold text-silver-500 uppercase tracking-wider block mb-4">Quick Actions</span>
+            <span className="font-sans text-xs font-semibold uppercase tracking-wider block mb-4" style={{ color: HQ_TEXT.muted }}>Quick Actions</span>
             <div className="space-y-2">
               {[
                 { label: "View Leads", href: "/hq/dashboard/leads" },
@@ -148,7 +149,7 @@ export default async function DashboardPage() {
                   style={{
                     background: "rgba(255,255,255,0.03)",
                     border: "1px solid rgba(255,255,255,0.05)",
-                    color: "rgba(148,163,184,0.75)",
+                    color: HQ_TEXT.secondary,
                   }}
                 >
                   {label} →

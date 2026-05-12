@@ -1,5 +1,7 @@
 "use client";
 
+import { HQ_TEXT } from "@/lib/hq-colors";
+
 interface TopBarProps {
   title: string;
   subtitle?: string;
@@ -17,16 +19,16 @@ export default function TopBar({ title, subtitle }: TopBarProps) {
     >
       <div>
         <h1 className="font-display text-base md:text-xl font-semibold text-white leading-tight">{title}</h1>
-        {subtitle && <p className="font-sans text-xs text-silver-600 mt-0.5">{subtitle}</p>}
+        {subtitle && <p className="font-sans text-xs mt-0.5" style={{ color: HQ_TEXT.muted }}>{subtitle}</p>}
       </div>
       <div className="flex items-center gap-3">
         <div
-          className="hidden lg:flex items-center gap-1.5 font-sans text-[10px] text-silver-700 px-3 py-1.5 rounded-sm"
-          style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}
+          className="hidden lg:flex items-center gap-1.5 font-sans text-[10px] px-3 py-1.5 rounded-sm"
+          style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", color: HQ_TEXT.helper }}
         >
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <span className="text-silver-500">Live</span>
-          <span className="mx-1 text-silver-800">·</span>
+          <span style={{ color: HQ_TEXT.muted }}>Live</span>
+          <span className="mx-1" style={{ color: HQ_TEXT.disabled }}>·</span>
           <span suppressHydrationWarning>{now}</span>
         </div>
       </div>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { HQ_TEXT, HQ_GOLD, HQ_NAV } from "@/lib/hq-colors";
 import type { Profile } from "@/lib/supabase/types";
 
 interface NavItem {
@@ -58,8 +59,8 @@ export default function Sidebar({ profile }: { profile: Profile | null }) {
           <Image src="/logo.png" alt="Island Investors" width={80} height={60} className="h-9 w-auto object-contain" />
         </Link>
         <div>
-          <div className="font-sans text-[10px] font-bold uppercase tracking-[0.18em] text-gold-400 leading-none">HQ</div>
-          <div className="font-sans text-[9px] text-silver-700 tracking-wide mt-0.5">Command Center</div>
+          <div className="font-sans text-[10px] font-bold uppercase tracking-[0.18em] leading-none" style={{ color: HQ_GOLD.bright }}>HQ</div>
+          <div className="font-sans text-[9px] tracking-wide mt-0.5" style={{ color: HQ_TEXT.helper }}>Command Center</div>
         </div>
       </div>
 
@@ -73,12 +74,12 @@ export default function Sidebar({ profile }: { profile: Profile | null }) {
               href={href}
               className="flex items-center gap-3 px-3 py-2.5 rounded-sm text-xs font-sans font-medium transition-all duration-150 group"
               style={{
-                background: active ? "rgba(200,150,42,0.10)" : "transparent",
-                color: active ? "rgba(200,150,42,0.95)" : "rgba(148,163,184,0.65)",
-                borderLeft: active ? "2px solid rgba(200,150,42,0.60)" : "2px solid transparent",
+                background: active ? HQ_GOLD.bgTint : "transparent",
+                color: active ? HQ_NAV.activeText : HQ_NAV.inactiveText,
+                borderLeft: active ? `2px solid ${HQ_GOLD.border}` : "2px solid transparent",
               }}
             >
-              <span style={{ color: active ? "rgba(200,150,42,0.85)" : "rgba(148,163,184,0.40)" }}>{icon}</span>
+              <span style={{ color: active ? HQ_NAV.activeIcon : HQ_NAV.inactiveIcon }}>{icon}</span>
               {label}
             </Link>
           );
@@ -89,11 +90,11 @@ export default function Sidebar({ profile }: { profile: Profile | null }) {
       <div className="px-3 py-4 border-t space-y-3" style={{ borderColor: "rgba(255,255,255,0.05)" }}>
         {profile && (
           <div className="px-3 py-2.5 rounded-sm" style={{ background: "rgba(255,255,255,0.03)" }}>
-            <div className="font-sans text-[11px] font-semibold text-silver-300 truncate">{profile.name ?? profile.email}</div>
+            <div className="font-sans text-[11px] font-semibold truncate" style={{ color: HQ_TEXT.secondary }}>{profile.name ?? profile.email}</div>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span
                 className="font-sans text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-sm"
-                style={{ background: "rgba(200,150,42,0.12)", color: "rgba(200,150,42,0.80)" }}
+                style={{ background: HQ_GOLD.bgTint, color: HQ_GOLD.text }}
               >
                 {profile.role}
               </span>
@@ -103,7 +104,7 @@ export default function Sidebar({ profile }: { profile: Profile | null }) {
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-sm font-sans text-xs font-medium transition-all duration-150"
-          style={{ color: "rgba(148,163,184,0.55)" }}
+          style={{ color: HQ_TEXT.muted }}
         >
           <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.6}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

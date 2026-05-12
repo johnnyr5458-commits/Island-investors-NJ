@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { HQ_GOLD, HQ_NAV } from "@/lib/hq-colors";
 
 function DockIcon({ d }: { d: string }) {
   return (
@@ -101,8 +102,8 @@ export default function BottomDock() {
                 gap: "3px",
                 padding: "6px 10px",
                 borderRadius: "14px",
-                color: active ? "rgba(200,150,42,0.95)" : "rgba(148,163,184,0.50)",
-                background: active ? "rgba(200,150,42,0.12)" : "transparent",
+                color: active ? HQ_NAV.activeText : HQ_NAV.inactiveText,
+                background: active ? HQ_GOLD.bgTint : "transparent",
                 textDecoration: "none",
                 transition: "color 150ms, background 150ms",
                 minWidth: 0,

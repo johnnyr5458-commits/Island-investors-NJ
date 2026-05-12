@@ -1,16 +1,30 @@
+import { Suspense } from "react";
 import TopBar from "@/components/hq/TopBar";
-import HQPlaceholder from "@/app/hq/_components/HQPlaceholder";
+import AnalyticsClient from "@/components/hq/analytics/AnalyticsClient";
+import AnalyticsSkeleton from "@/components/hq/analytics/AnalyticsSkeleton";
+import { getSubmissionCounts } from "@/lib/supabase/analytics-queries";
 
-export default function AnalyticsPage() {
+export const metadata = { title: "Analytics — Island Investors HQ" };
+
+export default async function AnalyticsPage() {
+  const submissions = await getSubmissionCounts("7d");
+
+  const initialData = {
+    range: "7d" as const,
+    ga4Configured: false,
+    submissions: {
+      seller: submissions.seller,
+      partner: submissions.partner,
+      conversionRate: null,
+    },
+  };
+
   return (
     <>
-      <TopBar title="Analytics" subtitle="Traffic, conversions, and performance metrics" />
-      <main className="flex-1 p-6">
-        <HQPlaceholder
-          title="Analytics Dashboard"
-          description="GA4 is installed and collecting data. Connect the Google Analytics Data API to display live metrics — sessions, conversion rate, top pages, and lead sources — directly in HQ."
-        />
-      </main>
+      <TopBar title="Analytics" subtitle="Traffic, conversions & performance" />
+      <Suspense fallback={<AnalyticsSkeleton />}>
+        <AnalyticsClient initialData={initialData} initialRange="7d" />
+      </Suspense>
     </>
   );
 }

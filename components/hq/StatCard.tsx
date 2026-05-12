@@ -1,3 +1,5 @@
+import { HQ_TEXT } from "@/lib/hq-colors";
+
 interface StatCardProps {
   label: string;
   value: string;
@@ -23,7 +25,7 @@ export default function StatCard({ label, value, sub, trend, icon }: StatCardPro
       <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(200,150,42,0.35) 50%, transparent)" }} />
 
       <div className="flex items-start justify-between mb-3">
-        <div className="text-silver-600" style={{ opacity: 0.7 }}>{icon}</div>
+        <div style={{ color: HQ_TEXT.helper }}>{icon}</div>
         {trend && (
           <span className="font-sans text-[10px] font-bold" style={{ color: trendColor }}>
             {trendSymbol}
@@ -32,8 +34,8 @@ export default function StatCard({ label, value, sub, trend, icon }: StatCardPro
       </div>
 
       <div className="font-display text-3xl font-bold text-white mb-1">{value}</div>
-      <div className="font-sans text-[11px] font-semibold uppercase tracking-wider text-silver-600">{label}</div>
-      {sub && <div className="font-sans text-[10px] text-silver-700 mt-1">{sub}</div>}
+      <div className="font-sans text-[11px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: HQ_TEXT.muted }}>{label}</div>
+      {sub && <div className="font-sans text-[10px] mt-0.5" style={{ color: HQ_TEXT.helper }}>{sub}</div>}
     </div>
   );
 }

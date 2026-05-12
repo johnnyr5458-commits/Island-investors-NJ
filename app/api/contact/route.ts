@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
+import { createAdminClient } from "@/lib/supabase/server";
 
 const TO_EMAIL = process.env.CONTACT_TO_EMAIL ?? "johnnyr5458@gmail.com";
 const FROM_EMAIL = process.env.CONTACT_FROM_EMAIL ?? "forms@islandinvestorsnj.com";
@@ -67,6 +68,11 @@ export async function POST(req: NextRequest) {
     }
 
     console.log("[contact] Email sent successfully. ID:", data?.id, "| To:", TO_EMAIL, "| Address:", address);
+    void (async () => {
+      try {
+        await createAdminClient().from("contact_submissions").insert({ name, phone, address, message });
+      } catch {}
+    })();
     return NextResponse.json({ ok: true, id: data?.id });
   } catch (err) {
     console.error("[contact] Unexpected error sending email:", err);
