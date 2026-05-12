@@ -1,4 +1,3 @@
-import { BetaAnalyticsDataClient } from "@google-analytics/data";
 import { OAuth2Client } from "google-auth-library";
 import { unstable_cache } from "next/cache";
 
@@ -59,16 +58,51 @@ export async function exchangeCodeForTokens(
   }
 }
 
-function createDataClient(): BetaAnalyticsDataClient {
+// ─── REST transport (replaces BetaAnalyticsDataClient / google-gax) ──────────
+// BetaAnalyticsDataClient v5 uses google-gax v4 which calls
+// this.auth.getUniverseDomain() — a method that only exists on GoogleAuth,
+// not OAuth2Client. Bypassed by calling the GA4 Data API REST endpoint
+// directly with the access token from the working OAuth2Client.
+
+interface Ga4RestRow {
+  dimensionValues?: Array<{ value: string }>;
+  metricValues?: Array<{ value: string }>;
+}
+interface Ga4RestResponse {
+  rows?: Ga4RestRow[];
+  error?: { code: number; message: string; status: string };
+}
+
+async function getOAuthToken(): Promise<string> {
   const { clientId, clientSecret, refreshToken } = cfg();
   const auth = new OAuth2Client(clientId, clientSecret);
   auth.setCredentials({ refresh_token: refreshToken });
-  // OAuth2Client satisfies the auth interface at runtime; cast resolves gax version type mismatch
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return new BetaAnalyticsDataClient({ auth: auth as any });
+  const { token } = await auth.getAccessToken();
+  if (!token) throw new Error("getAccessToken returned null");
+  return token;
 }
 
-/** Tests token refresh + a minimal GA4 API call. Used by the debug endpoint. */
+async function ga4Rest(
+  accessToken: string,
+  endpoint: "runReport" | "runRealtimeReport",
+  body: object
+): Promise<Ga4RestResponse> {
+  const id = cfg().propertyId?.replace("properties/", "");
+  const url = `https://analyticsdata.googleapis.com/v1beta/properties/${id}:${endpoint}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  const json = await res.json() as Ga4RestResponse;
+  if (!res.ok) throw new Error(json?.error?.message ?? `HTTP ${res.status}`);
+  return json;
+}
+
+/** Tests token refresh + a minimal GA4 REST call. Used by the debug endpoint. */
 export async function ga4DiagnosticCheck(): Promise<{
   tokenRefresh: "ok" | "error";
   apiCall: "ok" | "error" | "skipped";
@@ -76,31 +110,18 @@ export async function ga4DiagnosticCheck(): Promise<{
   apiError?: string;
   rowCount?: number;
 }> {
-  const { clientId, clientSecret, refreshToken, propertyId } = cfg();
-
   // Step 1: test OAuth token refresh
   let accessToken: string | null = null;
   try {
-    const auth = new OAuth2Client(clientId, clientSecret);
-    auth.setCredentials({ refresh_token: refreshToken });
-    const { token } = await auth.getAccessToken();
-    accessToken = token ?? null;
+    accessToken = await getOAuthToken();
   } catch (err) {
     console.error("[ga4] diagnostic token refresh failed:", err);
     return { tokenRefresh: "error", apiCall: "skipped", tokenError: String(err) };
   }
 
-  if (!accessToken) {
-    return { tokenRefresh: "error", apiCall: "skipped", tokenError: "getAccessToken returned null" };
-  }
-
-  // Step 2: minimal GA4 Data API call
-  const id = propertyId?.replace("properties/", "");
-  const property = `properties/${id}`;
+  // Step 2: minimal GA4 Data API REST call
   try {
-    const client = createDataClient();
-    const [report] = await client.runReport({
-      property,
+    const report = await ga4Rest(accessToken, "runReport", {
       dateRanges: [{ startDate: "7daysAgo", endDate: "yesterday" }],
       metrics: [{ name: "sessions" }],
       limit: 1,
@@ -110,11 +131,6 @@ export async function ga4DiagnosticCheck(): Promise<{
     console.error("[ga4] diagnostic API call failed:", err);
     return { tokenRefresh: "ok", apiCall: "error", apiError: String(err) };
   }
-}
-
-function propertyName() {
-  const id = cfg().propertyId?.replace("properties/", "");
-  return `properties/${id}`;
 }
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -152,13 +168,12 @@ async function fetchOverview(range: "today" | "7d" | "30d"): Promise<Ga4Overview
     return null;
   }
   try {
-    const client = createDataClient();
+    const token = await getOAuthToken();
     const dr = toDateRange(range);
     const dim = toDimension(range);
 
     const [totals, trend] = await Promise.all([
-      client.runReport({
-        property: propertyName(),
+      ga4Rest(token, "runReport", {
         dateRanges: [dr],
         metrics: [
           { name: "screenPageViews" },
@@ -166,8 +181,7 @@ async function fetchOverview(range: "today" | "7d" | "30d"): Promise<Ga4Overview
           { name: "activeUsers" },
         ],
       }),
-      client.runReport({
-        property: propertyName(),
+      ga4Rest(token, "runReport", {
         dateRanges: [dr],
         dimensions: [{ name: dim }],
         metrics: [{ name: "screenPageViews" }, { name: "sessions" }],
@@ -175,12 +189,12 @@ async function fetchOverview(range: "today" | "7d" | "30d"): Promise<Ga4Overview
       }),
     ]);
 
-    const row = totals[0]?.rows?.[0]?.metricValues ?? [];
+    const row = totals.rows?.[0]?.metricValues ?? [];
     const result = {
       pageviews:   parseInt(row[0]?.value ?? "0"),
       sessions:    parseInt(row[1]?.value ?? "0"),
       activeUsers: parseInt(row[2]?.value ?? "0"),
-      trend: (trend[0]?.rows ?? []).map((r) => ({
+      trend: (trend.rows ?? []).map((r) => ({
         date:      r.dimensionValues?.[0]?.value ?? "",
         pageviews: parseInt(r.metricValues?.[0]?.value ?? "0"),
         sessions:  parseInt(r.metricValues?.[1]?.value ?? "0"),
@@ -197,9 +211,8 @@ async function fetchOverview(range: "today" | "7d" | "30d"): Promise<Ga4Overview
 async function fetchSources(range: "today" | "7d" | "30d"): Promise<Ga4SourceRow[] | null> {
   if (!ga4IsConfigured()) return null;
   try {
-    const client = createDataClient();
-    const [report] = await client.runReport({
-      property: propertyName(),
+    const token = await getOAuthToken();
+    const report = await ga4Rest(token, "runReport", {
       dateRanges: [toDateRange(range)],
       dimensions: [{ name: "sessionDefaultChannelGroup" }],
       metrics:    [{ name: "sessions" }],
@@ -221,9 +234,8 @@ async function fetchSources(range: "today" | "7d" | "30d"): Promise<Ga4SourceRow
 async function fetchDevices(range: "today" | "7d" | "30d"): Promise<Ga4DeviceRow[] | null> {
   if (!ga4IsConfigured()) return null;
   try {
-    const client = createDataClient();
-    const [report] = await client.runReport({
-      property: propertyName(),
+    const token = await getOAuthToken();
+    const report = await ga4Rest(token, "runReport", {
       dateRanges: [toDateRange(range)],
       dimensions: [{ name: "deviceCategory" }],
       metrics:    [{ name: "sessions" }],
@@ -244,9 +256,8 @@ async function fetchDevices(range: "today" | "7d" | "30d"): Promise<Ga4DeviceRow
 async function fetchTopPages(range: "today" | "7d" | "30d"): Promise<Ga4PageRow[] | null> {
   if (!ga4IsConfigured()) return null;
   try {
-    const client = createDataClient();
-    const [report] = await client.runReport({
-      property: propertyName(),
+    const token = await getOAuthToken();
+    const report = await ga4Rest(token, "runReport", {
       dateRanges: [toDateRange(range)],
       dimensions: [{ name: "pagePath" }, { name: "pageTitle" }],
       metrics:    [{ name: "screenPageViews" }],
@@ -269,9 +280,8 @@ async function fetchTopPages(range: "today" | "7d" | "30d"): Promise<Ga4PageRow[
 async function fetchRealtime(): Promise<number> {
   if (!ga4IsConfigured()) return 0;
   try {
-    const client = createDataClient();
-    const [report] = await client.runRealtimeReport({
-      property: propertyName(),
+    const token = await getOAuthToken();
+    const report = await ga4Rest(token, "runRealtimeReport", {
       metrics: [{ name: "activeUsers" }],
     });
     const count = parseInt(report.rows?.[0]?.metricValues?.[0]?.value ?? "0");
@@ -284,8 +294,6 @@ async function fetchRealtime(): Promise<number> {
 }
 
 // ─── Cached exports ───────────────────────────────────────────────────────────
-// revalidate: 300 (5 min) — short enough to recover quickly from stale nulls
-// while still reducing GA4 API quota usage.
 
 export const getGa4Overview = unstable_cache(
   fetchOverview,
