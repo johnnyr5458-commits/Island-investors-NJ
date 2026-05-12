@@ -80,6 +80,38 @@ function renderPreview(md: string): string {
   return out.join("\n");
 }
 
+// Resize + re-compress on the client before upload so large mobile photos (often 8–15 MB)
+// never hit Vercel's 4.5 MB serverless payload limit. Falls back to the original file on
+// any canvas error (e.g. HEIC on non-Safari) so the upload path is never blocked.
+async function compressImage(file: File): Promise<File> {
+  const MAX_PX = 1600;
+  return new Promise((resolve) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const scale = Math.min(1, MAX_PX / Math.max(img.naturalWidth || 1, img.naturalHeight || 1));
+      const w = Math.round((img.naturalWidth || MAX_PX) * scale);
+      const h = Math.round((img.naturalHeight || MAX_PX) * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { resolve(file); return; }
+      ctx.drawImage(img, 0, 0, w, h);
+      canvas.toBlob(
+        (blob) => resolve(
+          blob ? new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" }) : file
+        ),
+        "image/jpeg",
+        0.82
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); resolve(file); };
+    img.src = objectUrl;
+  });
+}
+
 /** CSS for the hero image that matches exactly how it's displayed on the published post. */
 function heroImgStyle(rotation: number, position: string): React.CSSProperties {
   const swapped = rotation === 90 || rotation === 270;
@@ -224,12 +256,25 @@ export default function BlogEditor({ initialData }: Props) {
     setUploadErr("");
     setUploadBusy(true);
     try {
+      // Compress files over 1 MB before upload — prevents Vercel's 4.5 MB payload limit
+      // from returning a plain-text 413 that breaks JSON parsing.
+      const toUpload = file.size > 1_000_000 ? await compressImage(file) : file;
+
       const fd = new FormData();
-      fd.append("file", file);
-      const res  = await fetch("/api/hq/blog/upload", { method: "POST", body: fd });
-      const json = await res.json();
+      fd.append("file", toUpload);
+      const res = await fetch("/api/hq/blog/upload", { method: "POST", body: fd });
+
+      // Platform-level errors (e.g. Vercel 413) arrive as plain text, not JSON.
+      let json: { url?: string; error?: string } = {};
+      try {
+        json = await res.json();
+      } catch {
+        if (res.status === 413) throw new Error("Photo is too large — try a different image.");
+        throw new Error(`Upload failed (${res.status})`);
+      }
+
       if (!res.ok) throw new Error(json.error ?? "Upload failed");
-      setImageUrl(json.url);
+      setImageUrl(json.url!);
       setImageRotation(0);
       setImagePosition("center");
     } catch (e) {
