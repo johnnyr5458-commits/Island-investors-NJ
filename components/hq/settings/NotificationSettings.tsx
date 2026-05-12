@@ -3,11 +3,14 @@
 import { useState, useEffect } from "react";
 import { HQ_TEXT, HQ_GOLD } from "@/lib/hq-colors";
 
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
+function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const raw = atob(base64);
-  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+  const buffer = new ArrayBuffer(raw.length);
+  const bytes = new Uint8Array(buffer);
+  for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+  return bytes;
 }
 
 type PermState = "loading" | "unsupported" | "default" | "granted" | "denied";
@@ -38,12 +41,19 @@ export default function NotificationSettings() {
       if (permission !== "granted") { setWorking(false); return; }
 
       const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      // DEBUG — remove after confirming key integrity on Android
+      console.log("[push] VAPID key raw:", JSON.stringify(vapidKey));
+      console.log("[push] VAPID key length:", vapidKey?.length);
+      console.log("[push] VAPID key first/last chars:", vapidKey?.[0], "|", vapidKey?.[vapidKey.length - 1]);
       if (!vapidKey) throw new Error("Push notifications are not configured");
+
+      const converted = urlBase64ToUint8Array(vapidKey);
+      console.log("[push] Uint8Array length:", converted.length, "first byte:", converted[0]);
 
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidKey),
+        applicationServerKey: converted,
       });
 
       const res = await fetch("/api/hq/push/subscribe", {
