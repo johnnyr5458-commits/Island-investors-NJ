@@ -1,5 +1,6 @@
 export type UserRole = "admin" | "team" | "partner";
 export type UserStatus = "pending" | "active" | "paused" | "removed";
+export type LeadStatus = "new" | "contacted" | "qualified" | "closed" | "archived";
 
 export interface Profile {
   id: string;
@@ -37,6 +38,41 @@ export interface BlogPost {
   published_at: string | null;
 }
 
+export interface ContactSubmission {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string;
+  address: string;
+  best_time: string | null;
+  message: string | null;
+  form_type: string;
+  lead_source: string;
+  status: LeadStatus;
+  raw_payload: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PartnerSubmission {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  company: string | null;
+  areas: string | null;
+  property_types: string | null;
+  funding: string | null;
+  volume: string | null;
+  notes: string | null;
+  form_type: string;
+  lead_source: string;
+  status: LeadStatus;
+  raw_payload: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -49,6 +85,16 @@ export type Database = {
         Row: BlogPost;
         Insert: Partial<BlogPost> & { slug: string; title: string };
         Update: Partial<BlogPost>;
+      };
+      contact_submissions: {
+        Row: ContactSubmission;
+        Insert: Partial<ContactSubmission> & { name: string; phone: string; address: string };
+        Update: Partial<ContactSubmission>;
+      };
+      partner_submissions: {
+        Row: PartnerSubmission;
+        Insert: Partial<PartnerSubmission> & { name: string; email: string; phone: string };
+        Update: Partial<PartnerSubmission>;
       };
     };
   };

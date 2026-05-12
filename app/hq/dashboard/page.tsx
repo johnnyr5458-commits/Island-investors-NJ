@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import TopBar from "@/components/hq/TopBar";
 import StatCard from "@/components/hq/StatCard";
 import { HQ_TEXT, HQ_GOLD } from "@/lib/hq-colors";
+import { getSubmissionCounts } from "@/lib/supabase/analytics-queries";
 
 function ChartPlaceholder({ label }: { label: string }) {
   return (
@@ -51,7 +52,14 @@ function ActivityItem({ time, text, type }: { time: string; text: string; type: 
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const [
+    { data: { user } },
+    submissions,
+  ] = await Promise.all([
+    supabase.auth.getUser(),
+    getSubmissionCounts("7d"),
+  ]);
+
   const { data: profile } = await supabase
     .from("profiles")
     .select("name, role")
@@ -86,8 +94,9 @@ export default async function DashboardPage() {
           />
           <StatCard
             label="Leads Received"
-            value="—"
-            sub="Connect Formspree to activate"
+            value={String(submissions.seller)}
+            sub="Seller leads — last 7 days"
+            trend={submissions.seller > 0 ? "up" : "flat"}
             icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>}
           />
           <StatCard

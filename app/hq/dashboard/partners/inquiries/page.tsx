@@ -1,37 +1,36 @@
 import { createAdminClient } from "@/lib/supabase/server";
 import TopBar from "@/components/hq/TopBar";
 import StatCard from "@/components/hq/StatCard";
-import LeadsClient from "@/components/hq/leads/LeadsClient";
-import type { ContactSubmission } from "@/lib/supabase/types";
+import PartnerInquiriesClient from "@/components/hq/partners/PartnerInquiriesClient";
+import type { PartnerSubmission } from "@/lib/supabase/types";
 
-export const metadata = { title: "Leads — Island Investors HQ" };
+export const metadata = { title: "Partner Inquiries — Island Investors HQ" };
 
-export default async function LeadsPage() {
+export default async function PartnerInquiriesPage() {
   const admin = createAdminClient();
   const { data } = await admin
-    .from("contact_submissions")
+    .from("partner_submissions")
     .select("*")
     .order("created_at", { ascending: false });
 
-  const leads = (data ?? []) as ContactSubmission[];
+  const inquiries = (data ?? []) as PartnerSubmission[];
 
-  const totalNew = leads.filter(l => l.status === "new").length;
+  const totalNew = inquiries.filter(i => i.status === "new").length;
 
   const weekCutoff = new Date();
   weekCutoff.setDate(weekCutoff.getDate() - 7);
-  const thisWeek = leads.filter(l => new Date(l.created_at) >= weekCutoff).length;
+  const thisWeek = inquiries.filter(i => new Date(i.created_at) >= weekCutoff).length;
 
   return (
     <>
-      <TopBar title="Leads" subtitle="Incoming seller and homeowner inquiries" />
+      <TopBar title="Partner Inquiries" subtitle="Investor and buyer partner form submissions" />
       <main className="flex-1 p-6 space-y-6">
 
-        {/* Stat cards */}
         <div className="grid grid-cols-3 gap-4">
           <StatCard
-            label="Total Leads"
-            value={String(leads.length)}
-            sub="All seller inquiries"
+            label="Total"
+            value={String(inquiries.length)}
+            sub="All inquiries"
             icon={
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -61,7 +60,7 @@ export default async function LeadsPage() {
           />
         </div>
 
-        <LeadsClient leads={leads} />
+        <PartnerInquiriesClient inquiries={inquiries} />
 
       </main>
     </>

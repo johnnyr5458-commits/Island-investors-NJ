@@ -60,6 +60,7 @@ export default function ContactForm({ dark = false }: { dark?: boolean }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <input type="hidden" name="form_type" value="seller" />
       <div>
         <label className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${dark ? "text-silver-300" : "text-gray-600"}`}>
           Property Address

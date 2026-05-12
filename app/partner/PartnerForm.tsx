@@ -55,6 +55,7 @@ export default function PartnerForm() {
 
   return (
     <form onSubmit={handleSubmit} className="bg-navy-800 p-8 md:p-10 space-y-6 relative">
+      <input type="hidden" name="form_type" value="partner" />
       <div className="absolute top-0 left-8 right-8 h-px bg-gradient-to-r from-transparent via-gold-500/50 to-transparent" />
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
