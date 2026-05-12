@@ -3,6 +3,13 @@
 import { useState, useEffect } from "react";
 import { HQ_TEXT, HQ_GOLD } from "@/lib/hq-colors";
 
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(base64);
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
 type PermState = "loading" | "unsupported" | "default" | "granted" | "denied";
 
 export default function NotificationSettings() {
@@ -30,10 +37,13 @@ export default function NotificationSettings() {
       setPerm(permission as PermState);
       if (permission !== "granted") { setWorking(false); return; }
 
+      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!vapidKey) throw new Error("Push notifications are not configured");
+
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "",
+        applicationServerKey: urlBase64ToUint8Array(vapidKey),
       });
 
       const res = await fetch("/api/hq/push/subscribe", {
