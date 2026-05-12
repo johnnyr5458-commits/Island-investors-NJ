@@ -3,13 +3,56 @@
 import { useState, useEffect } from "react";
 import { HQ_TEXT, HQ_GOLD } from "@/lib/hq-colors";
 
-function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+function sanitizeVapidKey(raw: string | undefined): string {
+  const charCodes = (s: string, n = 6) =>
+    [...s].slice(0, n).map(c => c.charCodeAt(0));
+
+  // DEBUG — log raw value before any processing
+  console.log("[push:debug] raw value:      ", JSON.stringify(raw));
+  console.log("[push:debug] raw length:     ", raw?.length ?? "undefined");
+  if (raw) {
+    console.log("[push:debug] raw char codes [0..5]:", charCodes(raw));
+    console.log("[push:debug] contains double-quote:", raw.includes('"'));
+    console.log("[push:debug] contains single-quote:", raw.includes("'"));
+    console.log("[push:debug] contains backtick:    ", raw.includes("`"));
+    console.log("[push:debug] contains space:       ", raw.includes(" "));
+    console.log("[push:debug] contains newline:     ", raw.includes("\n"));
+    console.log("[push:debug] contains CR:          ", raw.includes("\r"));
+    console.log("[push:debug] contains tab:         ", raw.includes("\t"));
+    // Scan for any non-printable or non-ASCII char
+    const hidden = [...raw].filter(c => c.charCodeAt(0) < 32 || c.charCodeAt(0) > 126);
+    console.log("[push:debug] hidden/non-ASCII chars:", hidden.map(c => c.charCodeAt(0)));
+  }
+
+  if (!raw) throw new Error("NEXT_PUBLIC_VAPID_PUBLIC_KEY is not set");
+
+  // Strip wrapping quotes (any combination of " ' `) then all whitespace
+  const sanitized = raw
+    .trim()
+    .replace(/^["'`]+|["'`]+$/g, "")
+    .replace(/\s+/g, "");
+
+  // DEBUG — log sanitized value
+  console.log("[push:debug] sanitized value:", JSON.stringify(sanitized));
+  console.log("[push:debug] sanitized length:", sanitized.length);
+  console.log("[push:debug] sanitized char codes [0..5]:", charCodes(sanitized));
+
+  if (sanitized.length !== 87) {
+    throw new Error(`Invalid VAPID public key length: ${sanitized.length} (expected 87)`);
+  }
+
+  return sanitized;
+}
+
+function urlBase64ToUint8Array(sanitizedKey: string): Uint8Array<ArrayBuffer> {
+  const padding = "=".repeat((4 - (sanitizedKey.length % 4)) % 4);
+  const base64 = (sanitizedKey + padding).replace(/-/g, "+").replace(/_/g, "/");
+  console.log("[push:debug] base64 for atob (first 20):", base64.slice(0, 20));
   const raw = atob(base64);
   const buffer = new ArrayBuffer(raw.length);
   const bytes = new Uint8Array(buffer);
   for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+  console.log("[push:debug] Uint8Array length:", bytes.length, "first byte:", bytes[0]);
   return bytes;
 }
 
@@ -40,15 +83,8 @@ export default function NotificationSettings() {
       setPerm(permission as PermState);
       if (permission !== "granted") { setWorking(false); return; }
 
-      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-      // DEBUG — remove after confirming key integrity on Android
-      console.log("[push] VAPID key raw:", JSON.stringify(vapidKey));
-      console.log("[push] VAPID key length:", vapidKey?.length);
-      console.log("[push] VAPID key first/last chars:", vapidKey?.[0], "|", vapidKey?.[vapidKey.length - 1]);
-      if (!vapidKey) throw new Error("Push notifications are not configured");
-
-      const converted = urlBase64ToUint8Array(vapidKey);
-      console.log("[push] Uint8Array length:", converted.length, "first byte:", converted[0]);
+      const sanitizedKey = sanitizeVapidKey(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY);
+      const converted = urlBase64ToUint8Array(sanitizedKey);
 
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.subscribe({
