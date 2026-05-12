@@ -1,8 +1,10 @@
 import { createClient } from "@/lib/supabase/server";
 import TopBar from "@/components/hq/TopBar";
 import StatCard from "@/components/hq/StatCard";
+import DashboardTrafficCard from "@/components/hq/DashboardTrafficCard";
 import { HQ_TEXT, HQ_GOLD } from "@/lib/hq-colors";
 import { getSubmissionCounts } from "@/lib/supabase/analytics-queries";
+import { ga4IsConfigured, getGa4Overview } from "@/lib/ga4";
 
 function ChartPlaceholder({ label }: { label: string }) {
   return (
@@ -51,14 +53,22 @@ function ActivityItem({ time, text, type }: { time: string; text: string; type: 
 
 export default async function DashboardPage() {
   const supabase = await createClient();
+  const ga4Ready = ga4IsConfigured();
 
   const [
     { data: { user } },
     submissions,
+    overview,
   ] = await Promise.all([
     supabase.auth.getUser(),
     getSubmissionCounts("7d"),
+    ga4Ready ? getGa4Overview("7d") : Promise.resolve(null),
   ]);
+
+  const totalSubmissions = submissions.seller + submissions.partner;
+  const conversionRate = overview && overview.sessions > 0
+    ? `${((totalSubmissions / overview.sessions) * 100).toFixed(1)}%`
+    : null;
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -88,8 +98,9 @@ export default async function DashboardPage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             label="Website Visits"
-            value="—"
-            sub="Connect GA4 to activate"
+            value={overview ? overview.pageviews.toLocaleString() : "—"}
+            sub={overview ? "Page views — last 7 days" : "Connect GA4 to activate"}
+            trend={overview && overview.pageviews > 0 ? "up" : "flat"}
             icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>}
           />
           <StatCard
@@ -108,15 +119,16 @@ export default async function DashboardPage() {
           />
           <StatCard
             label="Conversion Rate"
-            value="—"
-            sub="Requires analytics integration"
+            value={conversionRate ?? "—"}
+            sub={conversionRate ? "Submissions / sessions" : ga4Ready ? "No session data yet" : "Requires GA4 connection"}
+            trend={conversionRate ? "up" : "flat"}
             icon={<svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>}
           />
         </div>
 
         {/* Charts row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <ChartPlaceholder label="Traffic Overview" />
+          <DashboardTrafficCard trend={overview?.trend ?? null} />
           <ChartPlaceholder label="Lead Flow" />
         </div>
 
