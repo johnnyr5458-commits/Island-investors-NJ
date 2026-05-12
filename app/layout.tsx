@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Playfair_Display, Inter, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
@@ -27,6 +27,13 @@ const cormorant = Cormorant_Garamond({
   display: "swap",
   weight: ["300", "400", "600"],
 });
+
+export const viewport: Viewport = {
+  themeColor: "#C8962A",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://islandinvestorsnj.com"),
@@ -57,6 +64,15 @@ export const metadata: Metadata = {
     card: "summary_large_image",
   },
   robots: { index: true, follow: true },
+  icons: {
+    icon: "/icon-192.png",
+    apple: "/icon-192.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "HQ",
+  },
 };
 
 export default function RootLayout({
