@@ -21,6 +21,18 @@ export function ga4IsConfigured() {
   return !!(propertyId && clientId && clientSecret && refreshToken);
 }
 
+/** Returns which env vars are present (for diagnostics — no secrets exposed). */
+export function ga4EnvStatus() {
+  const { propertyId, clientId, clientSecret, refreshToken } = cfg();
+  return {
+    GA4_PROPERTY_ID:      propertyId   ? `set (${propertyId})` : "MISSING",
+    GOOGLE_CLIENT_ID:     clientId     ? `set (${clientId.slice(0, 12)}…)` : "MISSING",
+    GOOGLE_CLIENT_SECRET: clientSecret ? "set" : "MISSING",
+    GA4_REFRESH_TOKEN:    refreshToken ? `set (${refreshToken.slice(0, 8)}…)` : "MISSING",
+    allPresent:           !!(propertyId && clientId && clientSecret && refreshToken),
+  };
+}
+
 // Returns the OAuth2 auth URL for the one-time setup flow
 export function getOAuthSetupUrl(redirectUri: string): string {
   const { clientId, clientSecret } = cfg();
@@ -54,6 +66,50 @@ function createDataClient(): BetaAnalyticsDataClient {
   // OAuth2Client satisfies the auth interface at runtime; cast resolves gax version type mismatch
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return new BetaAnalyticsDataClient({ auth: auth as any });
+}
+
+/** Tests token refresh + a minimal GA4 API call. Used by the debug endpoint. */
+export async function ga4DiagnosticCheck(): Promise<{
+  tokenRefresh: "ok" | "error";
+  apiCall: "ok" | "error" | "skipped";
+  tokenError?: string;
+  apiError?: string;
+  rowCount?: number;
+}> {
+  const { clientId, clientSecret, refreshToken, propertyId } = cfg();
+
+  // Step 1: test OAuth token refresh
+  let accessToken: string | null = null;
+  try {
+    const auth = new OAuth2Client(clientId, clientSecret);
+    auth.setCredentials({ refresh_token: refreshToken });
+    const { token } = await auth.getAccessToken();
+    accessToken = token ?? null;
+  } catch (err) {
+    console.error("[ga4] diagnostic token refresh failed:", err);
+    return { tokenRefresh: "error", apiCall: "skipped", tokenError: String(err) };
+  }
+
+  if (!accessToken) {
+    return { tokenRefresh: "error", apiCall: "skipped", tokenError: "getAccessToken returned null" };
+  }
+
+  // Step 2: minimal GA4 Data API call
+  const id = propertyId?.replace("properties/", "");
+  const property = `properties/${id}`;
+  try {
+    const client = createDataClient();
+    const [report] = await client.runReport({
+      property,
+      dateRanges: [{ startDate: "7daysAgo", endDate: "yesterday" }],
+      metrics: [{ name: "sessions" }],
+      limit: 1,
+    });
+    return { tokenRefresh: "ok", apiCall: "ok", rowCount: report.rows?.length ?? 0 };
+  } catch (err) {
+    console.error("[ga4] diagnostic API call failed:", err);
+    return { tokenRefresh: "ok", apiCall: "error", apiError: String(err) };
+  }
 }
 
 function propertyName() {
@@ -91,7 +147,10 @@ function toDimension(range: "today" | "7d" | "30d") {
 // ─── Fetchers (uncached — wrapped below) ──────────────────────────────────────
 
 async function fetchOverview(range: "today" | "7d" | "30d"): Promise<Ga4Overview | null> {
-  if (!ga4IsConfigured()) return null;
+  if (!ga4IsConfigured()) {
+    console.log("[ga4] fetchOverview: not configured, skipping");
+    return null;
+  }
   try {
     const client = createDataClient();
     const dr = toDateRange(range);
@@ -117,7 +176,7 @@ async function fetchOverview(range: "today" | "7d" | "30d"): Promise<Ga4Overview
     ]);
 
     const row = totals[0]?.rows?.[0]?.metricValues ?? [];
-    return {
+    const result = {
       pageviews:   parseInt(row[0]?.value ?? "0"),
       sessions:    parseInt(row[1]?.value ?? "0"),
       activeUsers: parseInt(row[2]?.value ?? "0"),
@@ -127,7 +186,10 @@ async function fetchOverview(range: "today" | "7d" | "30d"): Promise<Ga4Overview
         sessions:  parseInt(r.metricValues?.[1]?.value ?? "0"),
       })),
     };
-  } catch {
+    console.log(`[ga4] fetchOverview(${range}): pageviews=${result.pageviews} sessions=${result.sessions}`);
+    return result;
+  } catch (err) {
+    console.error(`[ga4] fetchOverview(${range}) error:`, err);
     return null;
   }
 }
@@ -144,11 +206,14 @@ async function fetchSources(range: "today" | "7d" | "30d"): Promise<Ga4SourceRow
       orderBys:   [{ metric: { metricName: "sessions" }, desc: true }],
       limit: 6,
     });
-    return (report.rows ?? []).map((r) => ({
+    const rows = (report.rows ?? []).map((r) => ({
       channel:  r.dimensionValues?.[0]?.value ?? "Other",
       sessions: parseInt(r.metricValues?.[0]?.value ?? "0"),
     }));
-  } catch {
+    console.log(`[ga4] fetchSources(${range}): ${rows.length} channels`);
+    return rows;
+  } catch (err) {
+    console.error(`[ga4] fetchSources(${range}) error:`, err);
     return null;
   }
 }
@@ -164,11 +229,14 @@ async function fetchDevices(range: "today" | "7d" | "30d"): Promise<Ga4DeviceRow
       metrics:    [{ name: "sessions" }],
       orderBys:   [{ metric: { metricName: "sessions" }, desc: true }],
     });
-    return (report.rows ?? []).map((r) => ({
+    const rows = (report.rows ?? []).map((r) => ({
       device:   r.dimensionValues?.[0]?.value ?? "other",
       sessions: parseInt(r.metricValues?.[0]?.value ?? "0"),
     }));
-  } catch {
+    console.log(`[ga4] fetchDevices(${range}): ${rows.length} device types`);
+    return rows;
+  } catch (err) {
+    console.error(`[ga4] fetchDevices(${range}) error:`, err);
     return null;
   }
 }
@@ -185,12 +253,15 @@ async function fetchTopPages(range: "today" | "7d" | "30d"): Promise<Ga4PageRow[
       orderBys:   [{ metric: { metricName: "screenPageViews" }, desc: true }],
       limit: 8,
     });
-    return (report.rows ?? []).map((r) => ({
+    const rows = (report.rows ?? []).map((r) => ({
       path:      r.dimensionValues?.[0]?.value ?? "/",
       title:     r.dimensionValues?.[1]?.value ?? "Untitled",
       pageviews: parseInt(r.metricValues?.[0]?.value ?? "0"),
     }));
-  } catch {
+    console.log(`[ga4] fetchTopPages(${range}): ${rows.length} pages`);
+    return rows;
+  } catch (err) {
+    console.error(`[ga4] fetchTopPages(${range}) error:`, err);
     return null;
   }
 }
@@ -203,36 +274,41 @@ async function fetchRealtime(): Promise<number> {
       property: propertyName(),
       metrics: [{ name: "activeUsers" }],
     });
-    return parseInt(report.rows?.[0]?.metricValues?.[0]?.value ?? "0");
-  } catch {
+    const count = parseInt(report.rows?.[0]?.metricValues?.[0]?.value ?? "0");
+    console.log(`[ga4] fetchRealtime: ${count} active users`);
+    return count;
+  } catch (err) {
+    console.error("[ga4] fetchRealtime error:", err);
     return 0;
   }
 }
 
 // ─── Cached exports ───────────────────────────────────────────────────────────
+// revalidate: 300 (5 min) — short enough to recover quickly from stale nulls
+// while still reducing GA4 API quota usage.
 
 export const getGa4Overview = unstable_cache(
   fetchOverview,
   ["ga4", "overview"],
-  { revalidate: 900 }
+  { revalidate: 300 }
 );
 
 export const getGa4Sources = unstable_cache(
   fetchSources,
   ["ga4", "sources"],
-  { revalidate: 900 }
+  { revalidate: 300 }
 );
 
 export const getGa4Devices = unstable_cache(
   fetchDevices,
   ["ga4", "devices"],
-  { revalidate: 900 }
+  { revalidate: 300 }
 );
 
 export const getGa4TopPages = unstable_cache(
   fetchTopPages,
   ["ga4", "pages"],
-  { revalidate: 900 }
+  { revalidate: 300 }
 );
 
 // Realtime is not cached — always fresh

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getSubmissionCounts } from "@/lib/supabase/analytics-queries";
 import {
   ga4IsConfigured,
+  ga4EnvStatus,
   getGa4Overview,
   getGa4Sources,
   getGa4Devices,
@@ -35,13 +36,16 @@ export async function GET(request: NextRequest) {
   const safeRange = validRanges.includes(range) ? range : "7d";
   const metric = searchParams.get("metric");
 
-  // Realtime sub-request — short-circuit, no cache header needed (route is dynamic)
+  // Realtime sub-request — short-circuit
   if (metric === "realtime") {
     const activeUsers = await getGa4Realtime();
     return NextResponse.json({ activeUsers });
   }
 
-  const configured = ga4IsConfigured();
+  const envStatus = ga4EnvStatus();
+  const configured = envStatus.allPresent;
+  console.log("[analytics] ga4 env status:", envStatus);
+  console.log("[analytics] ga4IsConfigured:", configured, "range:", safeRange);
 
   const [submissions, overview, sources, devices, topPages] = await Promise.all([
     getSubmissionCounts(safeRange),
@@ -50,6 +54,15 @@ export async function GET(request: NextRequest) {
     configured ? getGa4Devices(safeRange)  : Promise.resolve(null),
     configured ? getGa4TopPages(safeRange) : Promise.resolve(null),
   ]);
+
+  console.log("[analytics] results:", {
+    overview:  overview  ? `ok (sessions=${overview.sessions})` : "null",
+    sources:   sources   ? `ok (${sources.length} rows)` : "null",
+    devices:   devices   ? `ok (${devices.length} rows)` : "null",
+    topPages:  topPages  ? `ok (${topPages.length} rows)` : "null",
+    seller:    submissions.seller,
+    partner:   submissions.partner,
+  });
 
   // Conversion rate = total form submissions / sessions * 100
   const sessions = overview?.sessions ?? 0;
