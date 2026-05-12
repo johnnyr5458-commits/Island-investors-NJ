@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { createAdminClient } from "@/lib/supabase/server";
+import { sendLeadNotification } from "@/lib/push";
 
 const TO_EMAIL = process.env.CONTACT_TO_EMAIL ?? "johnnyr5458@gmail.com";
 const FROM_EMAIL = process.env.CONTACT_FROM_EMAIL ?? "forms@islandinvestorsnj.com";
@@ -56,7 +57,15 @@ export async function POST(req: NextRequest) {
 
   console.log("[partner] Lead saved. Name:", name, "| Email:", email);
 
-  // 2. Send email notification — fire-and-forget, never blocks the response
+  // 2. Push notification — fire-and-forget
+  void (async () => {
+    try {
+      const label = company ? `${name} — ${company}` : name;
+      await sendLeadNotification("New Partner Inquiry", label, "/hq/dashboard/partners/inquiries");
+    } catch (err) { console.error("[partner] Push notification failed:", err); }
+  })();
+
+  // 3. Send email notification — fire-and-forget, never blocks the response
   const apiKey = process.env.RESEND_API_KEY;
   if (apiKey) {
     void (async () => {
