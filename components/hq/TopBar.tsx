@@ -27,7 +27,7 @@ export default function TopBar({ title, subtitle }: TopBarProps) {
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
           <span className="text-silver-500">Live</span>
           <span className="mx-1 text-silver-800">·</span>
-          <span>{now}</span>
+          <span suppressHydrationWarning>{now}</span>
         </div>
       </div>
     </header>
