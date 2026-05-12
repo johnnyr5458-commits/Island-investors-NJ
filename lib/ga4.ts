@@ -3,19 +3,28 @@ import { OAuth2Client } from "google-auth-library";
 import { unstable_cache } from "next/cache";
 
 // ─── Configuration ────────────────────────────────────────────────────────────
+// Read process.env inside functions — never at module level.
+// Module-level reads are frozen at bundle time; Vercel env vars are only
+// available at request time.
 
-const PROPERTY_ID  = process.env.GA4_PROPERTY_ID;
-const CLIENT_ID    = process.env.GOOGLE_CLIENT_ID;
-const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const REFRESH_TOKEN = process.env.GA4_REFRESH_TOKEN;
+function cfg() {
+  return {
+    propertyId:   process.env.GA4_PROPERTY_ID,
+    clientId:     process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    refreshToken: process.env.GA4_REFRESH_TOKEN,
+  };
+}
 
 export function ga4IsConfigured() {
-  return !!(PROPERTY_ID && CLIENT_ID && CLIENT_SECRET && REFRESH_TOKEN);
+  const { propertyId, clientId, clientSecret, refreshToken } = cfg();
+  return !!(propertyId && clientId && clientSecret && refreshToken);
 }
 
 // Returns the OAuth2 auth URL for the one-time setup flow
 export function getOAuthSetupUrl(redirectUri: string): string {
-  const client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, redirectUri);
+  const { clientId, clientSecret } = cfg();
+  const client = new OAuth2Client(clientId, clientSecret, redirectUri);
   return client.generateAuthUrl({
     access_type: "offline",
     prompt: "consent",
@@ -28,8 +37,9 @@ export async function exchangeCodeForTokens(
   code: string,
   redirectUri: string
 ): Promise<{ refresh_token: string | null | undefined; error?: string }> {
+  const { clientId, clientSecret } = cfg();
   try {
-    const client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET, redirectUri);
+    const client = new OAuth2Client(clientId, clientSecret, redirectUri);
     const { tokens } = await client.getToken(code);
     return { refresh_token: tokens.refresh_token };
   } catch (err) {
@@ -38,15 +48,16 @@ export async function exchangeCodeForTokens(
 }
 
 function createDataClient(): BetaAnalyticsDataClient {
-  const auth = new OAuth2Client(CLIENT_ID, CLIENT_SECRET);
-  auth.setCredentials({ refresh_token: REFRESH_TOKEN });
+  const { clientId, clientSecret, refreshToken } = cfg();
+  const auth = new OAuth2Client(clientId, clientSecret);
+  auth.setCredentials({ refresh_token: refreshToken });
   // OAuth2Client satisfies the auth interface at runtime; cast resolves gax version type mismatch
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return new BetaAnalyticsDataClient({ auth: auth as any });
 }
 
 function propertyName() {
-  const id = PROPERTY_ID?.replace("properties/", "");
+  const id = cfg().propertyId?.replace("properties/", "");
   return `properties/${id}`;
 }
 
