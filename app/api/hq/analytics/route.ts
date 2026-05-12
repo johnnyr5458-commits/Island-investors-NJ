@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getSubmissionCounts } from "@/lib/supabase/analytics-queries";
+import {
+  ga4IsConfigured,
+  getGa4Overview,
+  getGa4Sources,
+  getGa4Devices,
+  getGa4TopPages,
+  getGa4Realtime,
+} from "@/lib/ga4";
 
 type Range = "today" | "7d" | "30d";
 
@@ -25,16 +33,42 @@ export async function GET(request: NextRequest) {
   const range = (searchParams.get("range") ?? "7d") as Range;
   const validRanges: Range[] = ["today", "7d", "30d"];
   const safeRange = validRanges.includes(range) ? range : "7d";
+  const metric = searchParams.get("metric");
 
-  const submissions = await getSubmissionCounts(safeRange);
+  // Realtime sub-request — short-circuit, no cache header needed (route is dynamic)
+  if (metric === "realtime") {
+    const activeUsers = await getGa4Realtime();
+    return NextResponse.json({ activeUsers });
+  }
+
+  const configured = ga4IsConfigured();
+
+  const [submissions, overview, sources, devices, topPages] = await Promise.all([
+    getSubmissionCounts(safeRange),
+    configured ? getGa4Overview(safeRange) : Promise.resolve(null),
+    configured ? getGa4Sources(safeRange)  : Promise.resolve(null),
+    configured ? getGa4Devices(safeRange)  : Promise.resolve(null),
+    configured ? getGa4TopPages(safeRange) : Promise.resolve(null),
+  ]);
+
+  // Conversion rate = total form submissions / sessions * 100
+  const sessions = overview?.sessions ?? 0;
+  const totalSubmissions = submissions.seller + submissions.partner;
+  const conversionRate = sessions > 0
+    ? `${((totalSubmissions / sessions) * 100).toFixed(2)}%`
+    : null;
 
   return NextResponse.json({
     range: safeRange,
-    ga4Configured: false,
+    ga4Configured: configured,
+    overview,
+    sources,
+    devices,
+    topPages,
     submissions: {
       seller: submissions.seller,
       partner: submissions.partner,
-      conversionRate: null,
+      conversionRate,
     },
   });
 }

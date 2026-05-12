@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 import StatCard from "@/components/hq/StatCard";
-import AnalyticsSkeleton from "./AnalyticsSkeleton";
 import Ga4PendingCard from "./Ga4PendingCard";
 import { HQ_TEXT, HQ_GOLD } from "@/lib/hq-colors";
 
@@ -23,16 +22,25 @@ const DeviceChart = dynamic(() => import("./charts/DeviceChart"), {
 
 type Range = "today" | "7d" | "30d";
 
-interface SubmissionData {
-  seller: number;
-  partner: number;
-  conversionRate: null;
-}
+// Mirror types from lib/ga4.ts — defined inline to avoid importing server-only module
+interface Ga4TrendPoint { date: string; pageviews: number; sessions: number }
+interface Ga4Overview { pageviews: number; sessions: number; activeUsers: number; trend: Ga4TrendPoint[] }
+interface Ga4SourceRow { channel: string; sessions: number }
+interface Ga4DeviceRow { device: string; sessions: number }
+interface Ga4PageRow { path: string; title: string; pageviews: number }
 
 interface AnalyticsData {
   range: Range;
   ga4Configured: boolean;
-  submissions: SubmissionData;
+  overview: Ga4Overview | null;
+  sources: Ga4SourceRow[] | null;
+  devices: Ga4DeviceRow[] | null;
+  topPages: Ga4PageRow[] | null;
+  submissions: {
+    seller: number;
+    partner: number;
+    conversionRate: string | null;
+  };
 }
 
 interface AnalyticsClientProps {
@@ -40,19 +48,9 @@ interface AnalyticsClientProps {
   initialRange: Range;
 }
 
-// Card wrapper matching HQ glassmorphism pattern
-function GlassCard({
-  title,
-  children,
-  className,
-}: {
-  title: string;
-  children: React.ReactNode;
-  className?: string;
-}) {
+function GlassCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div
-      className={className}
       style={{
         background: "rgba(8,22,40,0.55)",
         border: "1px solid rgba(255,255,255,0.06)",
@@ -62,28 +60,15 @@ function GlassCard({
         position: "relative",
       }}
     >
-      {/* Gold top edge */}
       <div
         style={{
           position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 1,
+          top: 0, left: 0, right: 0, height: 1,
           background: "linear-gradient(90deg, transparent, rgba(200,150,42,0.35) 50%, transparent)",
         }}
       />
       <div style={{ padding: "16px 16px 4px" }}>
-        <p
-          style={{
-            fontSize: 10,
-            fontWeight: 700,
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-            color: HQ_TEXT.muted,
-            margin: "0 0 12px",
-          }}
-        >
+        <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: HQ_TEXT.muted, margin: "0 0 12px" }}>
           {title}
         </p>
       </div>
@@ -92,18 +77,15 @@ function GlassCard({
   );
 }
 
-// KPI icon components (inline SVG, minimal)
 const icons = {
   views: (
     <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-      <circle cx="12" cy="12" r="3" />
+      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" />
     </svg>
   ),
   visitors: (
     <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
       <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
     </svg>
   ),
@@ -120,38 +102,48 @@ const icons = {
   ),
   partner: (
     <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-      <circle cx="9" cy="7" r="4" />
-      <path d="M22 21v-2a4 4 0 0 0-4-4h-1" />
-      <path d="M16 3a4 4 0 0 1 0 8" />
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+      <path d="M22 21v-2a4 4 0 0 0-4-4h-1" /><path d="M16 3a4 4 0 0 1 0 8" />
     </svg>
   ),
 };
 
-const RANGE_LABELS: Record<Range, string> = {
-  today: "Today",
-  "7d": "7 Days",
-  "30d": "30 Days",
-};
+const RANGE_LABELS: Record<Range, string> = { today: "Today", "7d": "7 Days", "30d": "30 Days" };
+
+function fmt(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toString();
+}
 
 export default function AnalyticsClient({ initialData, initialRange }: AnalyticsClientProps) {
   const [range, setRange] = useState<Range>(initialRange);
   const [data, setData] = useState<AnalyticsData>(initialData);
   const [loading, setLoading] = useState(false);
+  const [liveUsers, setLiveUsers] = useState<number | null>(null);
 
   const fetchRange = useCallback(async (newRange: Range) => {
     setLoading(true);
     try {
       const res = await fetch(`/api/hq/analytics?range=${newRange}`);
-      if (res.ok) {
-        const json = await res.json();
-        setData(json);
-      }
-    } catch {
-      // keep previous data on network error
-    } finally {
-      setLoading(false);
-    }
+      if (res.ok) setData(await res.json());
+    } catch { /* keep previous data */ } finally { setLoading(false); }
+  }, []);
+
+  // Poll realtime active users every 60s
+  useEffect(() => {
+    const poll = async () => {
+      try {
+        const res = await fetch("/api/hq/analytics?metric=realtime");
+        if (res.ok) {
+          const json = await res.json();
+          setLiveUsers(json.activeUsers ?? 0);
+        }
+      } catch { /* silent */ }
+    };
+    poll();
+    const id = setInterval(poll, 60_000);
+    return () => clearInterval(id);
   }, []);
 
   const handleRangeChange = (newRange: Range) => {
@@ -159,7 +151,7 @@ export default function AnalyticsClient({ initialData, initialRange }: Analytics
     fetchRange(newRange);
   };
 
-  const { submissions } = data;
+  const { submissions, overview, sources, devices, topPages, ga4Configured } = data;
   const totalInquiries = submissions.seller + submissions.partner;
 
   return (
@@ -168,16 +160,11 @@ export default function AnalyticsClient({ initialData, initialRange }: Analytics
       {/* Sticky range tab bar */}
       <div
         style={{
-          position: "sticky",
-          top: 0,
-          zIndex: 10,
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
+          position: "sticky", top: 0, zIndex: 10,
+          display: "flex", alignItems: "center", gap: 6,
           padding: "10px 16px",
           background: "rgba(6,14,26,0.97)",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
+          backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
           borderBottom: "1px solid rgba(255,255,255,0.05)",
         }}
       >
@@ -186,75 +173,55 @@ export default function AnalyticsClient({ initialData, initialRange }: Analytics
             key={r}
             onClick={() => handleRangeChange(r)}
             style={{
-              padding: "6px 14px",
-              borderRadius: 20,
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: "0.05em",
+              padding: "6px 14px", borderRadius: 20, fontSize: 11, fontWeight: 700, letterSpacing: "0.05em",
               border: range === r ? `1px solid ${HQ_GOLD.border}` : "1px solid rgba(255,255,255,0.08)",
               background: range === r ? HQ_GOLD.bgTint : "transparent",
               color: range === r ? HQ_GOLD.bright : HQ_TEXT.muted,
-              cursor: "pointer",
-              transition: "all 0.15s ease",
+              cursor: "pointer", transition: "all 0.15s ease",
             }}
           >
             {RANGE_LABELS[r]}
           </button>
         ))}
 
-        {/* Live dot */}
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
           {loading && (
-            <div
-              className="animate-spin"
-              style={{
-                width: 12,
-                height: 12,
-                border: "1.5px solid rgba(200,150,42,0.3)",
-                borderTopColor: "#C8962A",
-                borderRadius: "50%",
-              }}
-            />
+            <div className="animate-spin" style={{ width: 12, height: 12, border: "1.5px solid rgba(200,150,42,0.3)", borderTopColor: "#C8962A", borderRadius: "50%" }} />
           )}
-          <span
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              background: "#34d399",
-              display: "inline-block",
-              animation: "pulse 2s infinite",
-            }}
-          />
-          <span style={{ fontSize: 10, color: HQ_TEXT.helper, fontWeight: 600 }}>
-            LIVE
-          </span>
+          {liveUsers !== null && liveUsers > 0 && (
+            <span style={{ fontSize: 10, fontWeight: 700, color: "#34d399" }}>{liveUsers}</span>
+          )}
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#34d399", display: "inline-block", animation: "pulse 2s infinite" }} />
+          <span style={{ fontSize: 10, color: HQ_TEXT.helper, fontWeight: 600 }}>LIVE</span>
         </div>
       </div>
 
       {/* KPI stat strip */}
-      <div
-        style={{
-          display: "flex",
-          gap: 10,
-          padding: "16px 16px 0",
-          overflowX: "auto",
-          scrollbarWidth: "none",
-          msOverflowStyle: "none",
-        }}
-      >
-        {/* GA4 cards — pending */}
+      <div style={{ display: "flex", gap: 10, padding: "16px 16px 0", overflowX: "auto", scrollbarWidth: "none", msOverflowStyle: "none" }}>
         <div style={{ minWidth: 140, flexShrink: 0 }}>
-          <StatCard label="Page Views" value="—" sub="Connect GA4" icon={icons.views} />
+          <StatCard
+            label="Page Views"
+            value={ga4Configured && overview ? fmt(overview.pageviews) : "—"}
+            sub={ga4Configured ? RANGE_LABELS[range] : "Connect GA4"}
+            icon={icons.views}
+          />
         </div>
         <div style={{ minWidth: 140, flexShrink: 0 }}>
-          <StatCard label="Unique Visitors" value="—" sub="Connect GA4" icon={icons.visitors} />
+          <StatCard
+            label="Active Users"
+            value={ga4Configured && overview ? fmt(overview.activeUsers) : "—"}
+            sub={ga4Configured ? RANGE_LABELS[range] : "Connect GA4"}
+            icon={icons.visitors}
+          />
         </div>
         <div style={{ minWidth: 140, flexShrink: 0 }}>
-          <StatCard label="Sessions" value="—" sub="Connect GA4" icon={icons.sessions} />
+          <StatCard
+            label="Sessions"
+            value={ga4Configured && overview ? fmt(overview.sessions) : "—"}
+            sub={ga4Configured ? RANGE_LABELS[range] : "Connect GA4"}
+            icon={icons.sessions}
+          />
         </div>
-
-        {/* Supabase-powered cards — real data */}
         <div style={{ minWidth: 140, flexShrink: 0 }}>
           <StatCard
             label="Seller Inquiries"
@@ -280,53 +247,47 @@ export default function AnalyticsClient({ initialData, initialRange }: Analytics
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-          gap: 12,
-          padding: 16,
-          opacity: loading ? 0.5 : 1,
-          transition: "opacity 0.2s ease",
+          gap: 12, padding: 16,
+          opacity: loading ? 0.5 : 1, transition: "opacity 0.2s ease",
         }}
       >
         <GlassCard title="Traffic Trend">
-          <TrafficChart data={null} />
+          <TrafficChart data={overview?.trend ?? null} />
         </GlassCard>
 
         <GlassCard title="Traffic Sources">
-          <SourcesChart data={null} />
+          <SourcesChart data={sources ?? null} />
         </GlassCard>
 
         <GlassCard title="Device Split">
-          <DeviceChart data={null} />
+          <DeviceChart data={devices ?? null} />
         </GlassCard>
 
-        {/* Conversion snapshot — real Supabase data */}
+        {/* Conversion snapshot */}
         <GlassCard title="Conversion Snapshot">
           <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 4 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: 11, color: HQ_TEXT.muted }}>Seller Inquiries</span>
-              <span style={{ fontSize: 18, fontWeight: 700, color: "#fff", fontFamily: "var(--font-display, serif)" }}>
-                {submissions.seller}
-              </span>
+              <span style={{ fontSize: 18, fontWeight: 700, color: "#fff", fontFamily: "var(--font-display, serif)" }}>{submissions.seller}</span>
             </div>
             <div style={{ height: 1, background: "rgba(255,255,255,0.05)" }} />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: 11, color: HQ_TEXT.muted }}>Partner Inquiries</span>
-              <span style={{ fontSize: 18, fontWeight: 700, color: "#fff", fontFamily: "var(--font-display, serif)" }}>
-                {submissions.partner}
-              </span>
+              <span style={{ fontSize: 18, fontWeight: 700, color: "#fff", fontFamily: "var(--font-display, serif)" }}>{submissions.partner}</span>
             </div>
             <div style={{ height: 1, background: "rgba(255,255,255,0.05)" }} />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: 11, color: HQ_TEXT.muted }}>Total Inquiries</span>
-              <span style={{ fontSize: 22, fontWeight: 700, color: HQ_GOLD.bright, fontFamily: "var(--font-display, serif)" }}>
-                {totalInquiries}
-              </span>
+              <span style={{ fontSize: 22, fontWeight: 700, color: HQ_GOLD.bright, fontFamily: "var(--font-display, serif)" }}>{totalInquiries}</span>
             </div>
             <div style={{ height: 1, background: "rgba(255,255,255,0.05)" }} />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span style={{ fontSize: 11, color: HQ_TEXT.muted }}>Conv. Rate</span>
-              <span style={{ fontSize: 13, color: HQ_TEXT.disabled, fontStyle: "italic" }}>
-                — (requires GA4)
-              </span>
+              {submissions.conversionRate ? (
+                <span style={{ fontSize: 15, fontWeight: 700, color: "#34d399" }}>{submissions.conversionRate}</span>
+              ) : (
+                <span style={{ fontSize: 13, color: HQ_TEXT.disabled, fontStyle: "italic" }}>— (requires GA4)</span>
+              )}
             </div>
           </div>
         </GlassCard>
@@ -337,14 +298,27 @@ export default function AnalyticsClient({ initialData, initialRange }: Analytics
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-          gap: 12,
-          padding: "0 16px 16px",
-          opacity: loading ? 0.5 : 1,
-          transition: "opacity 0.2s ease",
+          gap: 12, padding: "0 16px 16px",
+          opacity: loading ? 0.5 : 1, transition: "opacity 0.2s ease",
         }}
       >
         <GlassCard title="Top Pages">
-          <Ga4PendingCard height={160} label="Top performing pages will appear here after GA4 is connected" />
+          {topPages && topPages.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {topPages.map((page, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 10, color: HQ_TEXT.disabled, fontWeight: 700, width: 16, textAlign: "right", flexShrink: 0 }}>{i + 1}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 11, color: HQ_TEXT.secondary, margin: 0, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{page.title}</p>
+                    <p style={{ fontSize: 10, color: HQ_TEXT.helper, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{page.path}</p>
+                  </div>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: HQ_GOLD.text, flexShrink: 0 }}>{fmt(page.pageviews)}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <Ga4PendingCard height={160} label="Top performing pages will appear here after GA4 is connected" />
+          )}
         </GlassCard>
 
         <GlassCard title="Geographic Focus">
@@ -352,42 +326,49 @@ export default function AnalyticsClient({ initialData, initialRange }: Analytics
         </GlassCard>
       </div>
 
-      {/* GA4 setup callout */}
-      <div style={{ padding: "0 16px 16px" }}>
-        <div
-          style={{
-            background: "rgba(200,150,42,0.06)",
-            border: "1px solid rgba(200,150,42,0.18)",
-            borderRadius: 2,
-            padding: "14px 16px",
-            display: "flex",
-            alignItems: "flex-start",
-            gap: 10,
-          }}
-        >
-          <svg
-            width="14"
-            height="14"
-            fill="none"
-            stroke={HQ_GOLD.dim}
-            strokeWidth="1.5"
-            viewBox="0 0 24 24"
-            style={{ flexShrink: 0, marginTop: 1 }}
+      {/* GA4 setup callout — only shown when not configured */}
+      {!ga4Configured && (
+        <div style={{ padding: "0 16px 16px" }}>
+          <div
+            style={{
+              background: "rgba(200,150,42,0.06)",
+              border: "1px solid rgba(200,150,42,0.18)",
+              borderRadius: 2, padding: "14px 16px",
+              display: "flex", alignItems: "flex-start", gap: 10,
+            }}
           >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
-          <div>
-            <p style={{ fontSize: 11, fontWeight: 700, color: HQ_GOLD.text, margin: "0 0 2px", letterSpacing: "0.04em" }}>
-              GA4 Data API — Not Connected
-            </p>
-            <p style={{ fontSize: 10, color: HQ_TEXT.helper, margin: 0, lineHeight: 1.6 }}>
-              Traffic, visitor, and device data require a Google Cloud service account. Once connected, all pending charts activate automatically.
-            </p>
+            <svg width="14" height="14" fill="none" stroke={HQ_GOLD.dim} strokeWidth="1.5" viewBox="0 0 24 24" style={{ flexShrink: 0, marginTop: 1 }}>
+              <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: HQ_GOLD.text, margin: "0 0 2px", letterSpacing: "0.04em" }}>
+                GA4 Data API — Not Connected
+              </p>
+              <p style={{ fontSize: 10, color: HQ_TEXT.helper, margin: "0 0 10px", lineHeight: 1.6 }}>
+                Connect your Google Analytics account to activate traffic charts, visitor counts, device breakdowns, and top pages data.
+              </p>
+              <a
+                href="/api/hq/ga4/setup"
+                style={{
+                  display: "inline-block",
+                  background: HQ_GOLD.bgTint,
+                  border: `1px solid ${HQ_GOLD.border}`,
+                  color: HQ_GOLD.text,
+                  padding: "6px 14px",
+                  borderRadius: 20,
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  textDecoration: "none",
+                }}
+              >
+                Connect GA4 →
+              </a>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
