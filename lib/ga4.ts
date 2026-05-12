@@ -17,7 +17,16 @@ function cfg() {
 
 export function ga4IsConfigured() {
   const { propertyId, clientId, clientSecret, refreshToken } = cfg();
-  return !!(propertyId && clientId && clientSecret && refreshToken);
+  const configured = !!(propertyId && clientId && clientSecret && refreshToken);
+  // Log presence (never values) — visible in Vercel function logs
+  console.log("[ga4] env check →",
+    "GA4_PROPERTY_ID:", propertyId ? "SET" : "MISSING",
+    "| GOOGLE_CLIENT_ID:", clientId ? "SET" : "MISSING",
+    "| GOOGLE_CLIENT_SECRET:", clientSecret ? "SET" : "MISSING",
+    "| GA4_REFRESH_TOKEN:", refreshToken ? "SET" : "MISSING",
+    "| configured:", configured,
+  );
+  return configured;
 }
 
 /** Returns which env vars are present (for diagnostics — no secrets exposed). */
@@ -163,10 +172,7 @@ function toDimension(range: "today" | "7d" | "30d") {
 // ─── Fetchers (uncached — wrapped below) ──────────────────────────────────────
 
 async function fetchOverview(range: "today" | "7d" | "30d"): Promise<Ga4Overview | null> {
-  if (!ga4IsConfigured()) {
-    console.log("[ga4] fetchOverview: not configured, skipping");
-    return null;
-  }
+  console.log(`[ga4] fetchOverview(${range}): running live fetch`);
   try {
     const token = await getOAuthToken();
     const dr = toDateRange(range);
@@ -209,7 +215,7 @@ async function fetchOverview(range: "today" | "7d" | "30d"): Promise<Ga4Overview
 }
 
 async function fetchSources(range: "today" | "7d" | "30d"): Promise<Ga4SourceRow[] | null> {
-  if (!ga4IsConfigured()) return null;
+  console.log(`[ga4] fetchSources(${range}): running live fetch`);
   try {
     const token = await getOAuthToken();
     const report = await ga4Rest(token, "runReport", {
@@ -232,7 +238,7 @@ async function fetchSources(range: "today" | "7d" | "30d"): Promise<Ga4SourceRow
 }
 
 async function fetchDevices(range: "today" | "7d" | "30d"): Promise<Ga4DeviceRow[] | null> {
-  if (!ga4IsConfigured()) return null;
+  console.log(`[ga4] fetchDevices(${range}): running live fetch`);
   try {
     const token = await getOAuthToken();
     const report = await ga4Rest(token, "runReport", {
@@ -254,7 +260,7 @@ async function fetchDevices(range: "today" | "7d" | "30d"): Promise<Ga4DeviceRow
 }
 
 async function fetchTopPages(range: "today" | "7d" | "30d"): Promise<Ga4PageRow[] | null> {
-  if (!ga4IsConfigured()) return null;
+  console.log(`[ga4] fetchTopPages(${range}): running live fetch`);
   try {
     const token = await getOAuthToken();
     const report = await ga4Rest(token, "runReport", {
@@ -278,7 +284,7 @@ async function fetchTopPages(range: "today" | "7d" | "30d"): Promise<Ga4PageRow[
 }
 
 async function fetchRealtime(): Promise<number> {
-  if (!ga4IsConfigured()) return 0;
+  console.log("[ga4] fetchRealtime: running live fetch");
   try {
     const token = await getOAuthToken();
     const report = await ga4Rest(token, "runRealtimeReport", {
