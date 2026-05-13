@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import TopBar from "@/components/hq/TopBar";
 import StatCard from "@/components/hq/StatCard";
 import DashboardTrafficCard from "@/components/hq/DashboardTrafficCard";
@@ -6,34 +6,90 @@ import { HQ_TEXT, HQ_GOLD } from "@/lib/hq-colors";
 import { getSubmissionCounts } from "@/lib/supabase/analytics-queries";
 import { ga4IsConfigured, getGa4Overview } from "@/lib/ga4";
 
-function ChartPlaceholder({ label }: { label: string }) {
+type LeadRow = {
+  id: string;
+  name: string;
+  address: string;
+  status: string;
+  lead_source: string;
+  created_at: string;
+};
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
+function LeadFlowCard({ leads, newCount }: { leads: LeadRow[]; newCount: number }) {
+  const dot = (s: string) =>
+    s === "new" ? "#34d399" : s === "contacted" ? HQ_GOLD.text : s === "qualified" ? "#60a5fa" : "#475569";
+
   return (
     <div
       className="p-5 h-52 flex flex-col"
-      style={{
-        background: "rgba(8,22,40,0.55)",
-        border: "1px solid rgba(255,255,255,0.06)",
-      }}
+      style={{ background: "rgba(8,22,40,0.55)", border: "1px solid rgba(255,255,255,0.06)" }}
     >
       <div className="flex items-center justify-between mb-4">
-        <span className="font-sans text-xs font-semibold uppercase tracking-wider" style={{ color: HQ_TEXT.muted }}>{label}</span>
-        <span
-          className="font-sans text-[9px] font-bold uppercase tracking-wider px-2 py-1"
-          style={{ background: HQ_GOLD.bgTint, border: `1px solid ${HQ_GOLD.border}`, color: HQ_GOLD.dim }}
-        >
-          Pending Connection
+        <span className="font-sans text-xs font-semibold uppercase tracking-wider" style={{ color: HQ_TEXT.muted }}>
+          Lead Flow
         </span>
+        {newCount > 0 ? (
+          <span
+            className="font-sans text-[9px] font-bold uppercase tracking-wider px-2 py-1"
+            style={{ background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.2)", color: "#34d399" }}
+          >
+            {newCount} New
+          </span>
+        ) : (
+          <span
+            className="font-sans text-[9px] font-bold uppercase tracking-wider px-2 py-1"
+            style={{ background: HQ_GOLD.bgTint, border: `1px solid ${HQ_GOLD.border}`, color: HQ_GOLD.dim }}
+          >
+            {leads.length === 0 ? "No Leads Yet" : "All Reviewed"}
+          </span>
+        )}
       </div>
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-3" style={{ background: "rgba(200,150,42,0.06)", border: "1px solid rgba(200,150,42,0.12)" }}>
-            <svg className="w-5 h-5 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} style={{ color: HQ_GOLD.dim }}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
-          <p className="font-sans text-[11px]" style={{ color: HQ_TEXT.helper }}>Connect your data source to activate</p>
+
+      {leads.length === 0 ? (
+        <div className="flex-1 flex items-center justify-center">
+          <p className="font-sans text-[11px] text-center" style={{ color: HQ_TEXT.helper }}>
+            No leads yet — your first submission will appear here.
+          </p>
         </div>
-      </div>
+      ) : (
+        <>
+          <div className="flex-1 space-y-2.5 overflow-hidden">
+            {leads.slice(0, 4).map(lead => (
+              <div key={lead.id} className="flex items-center gap-2.5">
+                <div className="w-1.5 h-1.5 rounded-full shrink-0 mt-px" style={{ background: dot(lead.status) }} />
+                <span className="font-sans text-[11px] font-medium truncate flex-1" style={{ color: HQ_TEXT.secondary }}>
+                  {lead.name}
+                </span>
+                {lead.lead_source && lead.lead_source !== "direct" && (
+                  <span className="font-sans text-[9px] shrink-0 uppercase tracking-wide" style={{ color: HQ_TEXT.helper }}>
+                    {lead.lead_source}
+                  </span>
+                )}
+                <span className="font-sans text-[10px] shrink-0" style={{ color: HQ_TEXT.helper }}>
+                  {timeAgo(lead.created_at)}
+                </span>
+              </div>
+            ))}
+          </div>
+          <a
+            href="/hq/dashboard/leads"
+            className="font-sans text-[10px] mt-3 pt-2 border-t block"
+            style={{ borderColor: "rgba(255,255,255,0.06)", color: HQ_TEXT.helper }}
+          >
+            View all leads →
+          </a>
+        </>
+      )}
     </div>
   );
 }
@@ -53,17 +109,27 @@ function ActivityItem({ time, text, type }: { time: string; text: string; type: 
 
 export default async function DashboardPage() {
   const supabase = await createClient();
+  const admin = createAdminClient();
   const ga4Ready = ga4IsConfigured();
 
   const [
     { data: { user } },
     submissions,
     overview,
+    { data: recentLeadsData },
   ] = await Promise.all([
     supabase.auth.getUser(),
     getSubmissionCounts("7d"),
     ga4Ready ? getGa4Overview("7d") : Promise.resolve(null),
+    admin
+      .from("contact_submissions")
+      .select("id, name, address, status, lead_source, created_at")
+      .order("created_at", { ascending: false })
+      .limit(8),
   ]);
+
+  const recentLeads = (recentLeadsData ?? []) as LeadRow[];
+  const newLeadsCount = recentLeads.filter(l => l.status === "new").length;
 
   const totalSubmissions = submissions.seller + submissions.partner;
   const conversionRate = overview && overview.sessions > 0
@@ -129,7 +195,7 @@ export default async function DashboardPage() {
         {/* Charts row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <DashboardTrafficCard trend={overview?.trend ?? null} />
-          <ChartPlaceholder label="Lead Flow" />
+          <LeadFlowCard leads={recentLeads} newCount={newLeadsCount} />
         </div>
 
         {/* Activity + quick actions */}
@@ -143,10 +209,22 @@ export default async function DashboardPage() {
               <span className="font-sans text-xs font-semibold uppercase tracking-wider" style={{ color: HQ_TEXT.muted }}>Recent Activity</span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             </div>
-            <ActivityItem time="Just now" text="System initialized — HQ is live and operational." type="system" />
-            <ActivityItem time="Ready" text="Partner management module is active." type="partner" />
-            <ActivityItem time="Pending" text="Lead sync — connect Formspree webhook to populate." type="lead" />
-            <ActivityItem time="Pending" text="Analytics module — connect GA4 data API to populate." type="system" />
+            {recentLeads.length > 0 ? (
+              recentLeads.slice(0, 3).map(lead => (
+                <ActivityItem
+                  key={lead.id}
+                  time={timeAgo(lead.created_at)}
+                  text={`Seller inquiry from ${lead.name} — ${lead.address.split(",")[0]}`}
+                  type="lead"
+                />
+              ))
+            ) : (
+              <ActivityItem time="Waiting" text="No lead submissions yet — form submissions will appear here." type="lead" />
+            )}
+            <ActivityItem time="Active" text="Partner management module is active." type="partner" />
+            {!ga4Ready && (
+              <ActivityItem time="Pending" text="Analytics module — connect GA4 data API to activate." type="system" />
+            )}
           </div>
 
           {/* Quick actions */}
