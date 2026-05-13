@@ -28,6 +28,7 @@ interface Ga4Overview { pageviews: number; sessions: number; activeUsers: number
 interface Ga4SourceRow { channel: string; sessions: number }
 interface Ga4DeviceRow { device: string; sessions: number }
 interface Ga4PageRow { path: string; title: string; pageviews: number }
+interface Ga4GeoRow { region: string; sessions: number }
 
 interface AnalyticsData {
   range: Range;
@@ -36,6 +37,7 @@ interface AnalyticsData {
   sources: Ga4SourceRow[] | null;
   devices: Ga4DeviceRow[] | null;
   topPages: Ga4PageRow[] | null;
+  geo: Ga4GeoRow[] | null;
   submissions: {
     seller: number;
     partner: number;
@@ -151,7 +153,7 @@ export default function AnalyticsClient({ initialData, initialRange }: Analytics
     fetchRange(newRange);
   };
 
-  const { submissions, overview, sources, devices, topPages, ga4Configured } = data;
+  const { submissions, overview, sources, devices, topPages, geo, ga4Configured } = data;
   const totalInquiries = submissions.seller + submissions.partner;
 
   return (
@@ -322,7 +324,19 @@ export default function AnalyticsClient({ initialData, initialRange }: Analytics
         </GlassCard>
 
         <GlassCard title="Geographic Focus">
-          <Ga4PendingCard height={160} label="Traffic by region — Atlantic County and beyond" />
+          {geo && geo.length > 0 ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {geo.map((row, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 10, color: HQ_TEXT.disabled, fontWeight: 700, width: 16, textAlign: "right", flexShrink: 0 }}>{i + 1}</span>
+                  <span style={{ flex: 1, fontSize: 11, color: HQ_TEXT.secondary, fontWeight: 600 }}>{row.region}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: HQ_GOLD.text, flexShrink: 0 }}>{fmt(row.sessions)}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <Ga4PendingCard height={160} label="Traffic by region — Atlantic County and beyond" />
+          )}
         </GlassCard>
       </div>
 

@@ -154,6 +154,7 @@ export interface Ga4Overview {
 export interface Ga4SourceRow { channel: string; sessions: number }
 export interface Ga4DeviceRow  { device: string;  sessions: number }
 export interface Ga4PageRow    { path: string; title: string; pageviews: number }
+export interface Ga4GeoRow     { region: string; sessions: number }
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
@@ -283,6 +284,29 @@ async function fetchTopPages(range: "today" | "7d" | "30d"): Promise<Ga4PageRow[
   }
 }
 
+async function fetchGeo(range: "today" | "7d" | "30d"): Promise<Ga4GeoRow[] | null> {
+  console.log(`[ga4] fetchGeo(${range}): running live fetch`);
+  try {
+    const token = await getOAuthToken();
+    const report = await ga4Rest(token, "runReport", {
+      dateRanges: [toDateRange(range)],
+      dimensions: [{ name: "region" }],
+      metrics:    [{ name: "sessions" }],
+      orderBys:   [{ metric: { metricName: "sessions" }, desc: true }],
+      limit: 8,
+    });
+    const rows = (report.rows ?? []).map(r => ({
+      region:   r.dimensionValues?.[0]?.value ?? "Unknown",
+      sessions: parseInt(r.metricValues?.[0]?.value ?? "0"),
+    }));
+    console.log(`[ga4] fetchGeo(${range}): ${rows.length} regions`);
+    return rows;
+  } catch (err) {
+    console.error(`[ga4] fetchGeo(${range}) error:`, err);
+    return null;
+  }
+}
+
 async function fetchRealtime(): Promise<number> {
   console.log("[ga4] fetchRealtime: running live fetch");
   try {
@@ -322,6 +346,12 @@ export const getGa4Devices = unstable_cache(
 export const getGa4TopPages = unstable_cache(
   fetchTopPages,
   ["ga4", "pages"],
+  { revalidate: 300 }
+);
+
+export const getGa4Geo = unstable_cache(
+  fetchGeo,
+  ["ga4", "geo"],
   { revalidate: 300 }
 );
 

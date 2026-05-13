@@ -3,19 +3,20 @@ import TopBar from "@/components/hq/TopBar";
 import AnalyticsClient from "@/components/hq/analytics/AnalyticsClient";
 import AnalyticsSkeleton from "@/components/hq/analytics/AnalyticsSkeleton";
 import { getSubmissionCounts } from "@/lib/supabase/analytics-queries";
-import { ga4IsConfigured, getGa4Overview, getGa4Sources, getGa4Devices, getGa4TopPages } from "@/lib/ga4";
+import { ga4IsConfigured, getGa4Overview, getGa4Sources, getGa4Devices, getGa4TopPages, getGa4Geo } from "@/lib/ga4";
 
 export const metadata = { title: "Analytics — Island Investors HQ" };
 
 export default async function AnalyticsPage() {
   const configured = ga4IsConfigured();
 
-  const [submissions, overview, sources, devices, topPages] = await Promise.all([
+  const [submissions, overview, sources, devices, topPages, geo] = await Promise.all([
     getSubmissionCounts("7d"),
     configured ? getGa4Overview("7d") : Promise.resolve(null),
     configured ? getGa4Sources("7d")  : Promise.resolve(null),
     configured ? getGa4Devices("7d")  : Promise.resolve(null),
     configured ? getGa4TopPages("7d") : Promise.resolve(null),
+    configured ? getGa4Geo("7d")      : Promise.resolve(null),
   ]);
 
   const sessions = overview?.sessions ?? 0;
@@ -31,6 +32,7 @@ export default async function AnalyticsPage() {
     sources: sources ?? null,
     devices: devices ?? null,
     topPages: topPages ?? null,
+    geo: geo ?? null,
     submissions: {
       seller: submissions.seller,
       partner: submissions.partner,

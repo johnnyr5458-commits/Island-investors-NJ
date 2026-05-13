@@ -8,6 +8,7 @@ import {
   getGa4Sources,
   getGa4Devices,
   getGa4TopPages,
+  getGa4Geo,
   getGa4Realtime,
 } from "@/lib/ga4";
 
@@ -47,12 +48,13 @@ export async function GET(request: NextRequest) {
   console.log("[analytics] ga4 env status:", envStatus);
   console.log("[analytics] ga4IsConfigured:", configured, "range:", safeRange);
 
-  const [submissions, overview, sources, devices, topPages] = await Promise.all([
+  const [submissions, overview, sources, devices, topPages, geo] = await Promise.all([
     getSubmissionCounts(safeRange),
     configured ? getGa4Overview(safeRange) : Promise.resolve(null),
     configured ? getGa4Sources(safeRange)  : Promise.resolve(null),
     configured ? getGa4Devices(safeRange)  : Promise.resolve(null),
     configured ? getGa4TopPages(safeRange) : Promise.resolve(null),
+    configured ? getGa4Geo(safeRange)      : Promise.resolve(null),
   ]);
 
   console.log("[analytics] results:", {
@@ -60,6 +62,7 @@ export async function GET(request: NextRequest) {
     sources:   sources   ? `ok (${sources.length} rows)` : "null",
     devices:   devices   ? `ok (${devices.length} rows)` : "null",
     topPages:  topPages  ? `ok (${topPages.length} rows)` : "null",
+    geo:       geo       ? `ok (${geo.length} regions)` : "null",
     seller:    submissions.seller,
     partner:   submissions.partner,
   });
@@ -78,6 +81,7 @@ export async function GET(request: NextRequest) {
     sources,
     devices,
     topPages,
+    geo,
     submissions: {
       seller: submissions.seller,
       partner: submissions.partner,
