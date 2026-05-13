@@ -7,7 +7,8 @@ import { createClient } from "@supabase/supabase-js";
 function authorized(req: NextRequest): boolean {
   const header = req.headers.get("authorization") ?? "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : "";
-  const secret = process.env.ANALYTICS_CRON_SECRET;
+  // Accept ANALYTICS_CRON_SECRET (local/manual) or CRON_SECRET (Vercel's built-in cron var)
+  const secret = process.env.ANALYTICS_CRON_SECRET ?? process.env.CRON_SECRET;
   return !!secret && token === secret;
 }
 
