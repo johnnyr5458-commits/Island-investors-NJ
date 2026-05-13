@@ -318,7 +318,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Not configured", hint: "ANALYTICS_CRON_SECRET and CRON_SECRET are both unset in Vercel env" }, { status: 503 });
   }
   if (!authorized(request)) {
-    return NextResponse.json({ error: "Unauthorized", secretLen: secret.length }, { status: 401 });
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const reportDate = isoDate(0); // today (Sunday when cron fires)
