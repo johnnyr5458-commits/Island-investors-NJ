@@ -313,6 +313,10 @@ function generateMarkdown(data: ReportData, reportDate: string): string {
 // ─── Route handler ────────────────────────────────────────────────────────────
 
 export async function GET(request: NextRequest) {
+  const secret = process.env.ANALYTICS_CRON_SECRET ?? process.env.CRON_SECRET;
+  if (!secret) {
+    return NextResponse.json({ error: "Not configured", hint: "ANALYTICS_CRON_SECRET and CRON_SECRET are both unset in Vercel env" }, { status: 503 });
+  }
   if (!authorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
