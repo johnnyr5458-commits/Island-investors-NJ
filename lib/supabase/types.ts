@@ -108,6 +108,16 @@ export interface CadenceEvent {
   updated_at: string;
 }
 
+export interface CadenceSyncState {
+  id: string;
+  vault_id: string;
+  last_synced_at: string | null;
+  last_run_at: string;
+  events_synced: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export type Database = {
   public: {
     Tables: {
