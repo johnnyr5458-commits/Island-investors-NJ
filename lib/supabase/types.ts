@@ -118,6 +118,48 @@ export interface CadenceSyncState {
   updated_at: string;
 }
 
+// ── Phase 4: Retrieval Layer ──────────────────────────────────────────────────
+
+export type RetrievalQueryType =
+  | "entity_memory"
+  | "text_search"
+  | "timeline_range"
+  | "relationship_graph"
+  | "recent_activity"
+  | "high_priority";
+
+export interface TraceableEvent extends CadenceEvent {
+  _source: "cadence_events";
+  _retrieved_at: string;
+}
+
+export interface TraceableRelationship extends CadenceContext {
+  _source: "cadence_contexts";
+  _retrieved_at: string;
+}
+
+export interface VaultNoteResult {
+  path: string;
+  exists: boolean;
+  sections?: {
+    timeline?: string;
+    relationships?: string;
+  };
+}
+
+export interface RetrievalResponse {
+  query_type: RetrievalQueryType;
+  events: TraceableEvent[];
+  relationships: TraceableRelationship[];
+  vault_note?: VaultNoteResult;
+  total_found: number;
+  completeness: "full" | "partial" | "no_data";
+  uncertainty_note?: string;
+  retrieved_at: string;
+}
+
+// ── Database Schema ───────────────────────────────────────────────────────────
+
 export type Database = {
   public: {
     Tables: {

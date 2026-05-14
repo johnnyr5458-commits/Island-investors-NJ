@@ -1,5 +1,6 @@
 // Pure TypeScript utilities for Cadence vault sync.
-// No Supabase, no filesystem, no side effects — types and formatters only.
+// No Supabase, no side effects in the formatter section.
+// readEntityVaultNote is the sole filesystem-reading function (Phase 4).
 // The .mjs sync script inlines equivalent JS logic to avoid a build step.
 
 export interface VaultEvent {
@@ -177,4 +178,47 @@ export function generateDailyLog(date: string, events: VaultEvent[]): string {
 export function appendToDailyLog(existing: string, events: VaultEvent[]): string {
   const newEntries = events.map(formatDailyEntry).join("\n");
   return appendToSection(existing, MARKER_DAILY, newEntries);
+}
+
+// ── Phase 4: Vault Note Reading ───────────────────────────────────────────────
+
+import type { VaultNoteResult } from "@/lib/supabase/types";
+import { readFileSync } from "fs";
+import { join } from "path";
+
+export async function readEntityVaultNote(
+  entityType: string,
+  entityId: string
+): Promise<VaultNoteResult | null> {
+  const vaultPath = process.env.CADENCE_VAULT_PATH;
+  if (!vaultPath) return null;
+
+  const notePath = join(vaultPath, "Cadence", "Entities", entityType, `${entityId}.md`);
+
+  try {
+    const content = readFileSync(notePath, "utf-8");
+    const sections: VaultNoteResult["sections"] = {};
+
+    // Extract timeline section
+    const tlStart = content.indexOf(markerStart(MARKER_TIMELINE));
+    const tlEnd = content.indexOf(markerEnd(MARKER_TIMELINE));
+    if (tlStart !== -1 && tlEnd !== -1) {
+      sections.timeline = content
+        .slice(tlStart + markerStart(MARKER_TIMELINE).length, tlEnd)
+        .trim();
+    }
+
+    // Extract relationships section
+    const rlStart = content.indexOf(markerStart(MARKER_RELATIONS));
+    const rlEnd = content.indexOf(markerEnd(MARKER_RELATIONS));
+    if (rlStart !== -1 && rlEnd !== -1) {
+      sections.relationships = content
+        .slice(rlStart + markerStart(MARKER_RELATIONS).length, rlEnd)
+        .trim();
+    }
+
+    return { path: notePath, exists: true, sections };
+  } catch {
+    return { path: notePath, exists: false };
+  }
 }

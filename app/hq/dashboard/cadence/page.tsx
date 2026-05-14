@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/server";
 import TopBar from "@/components/hq/TopBar";
 import ActivityFeed from "@/components/hq/cadence/ActivityFeed";
 import type { CadenceEvent } from "@/lib/supabase/types";
+import { HQ_TEXT, HQ_GOLD } from "@/lib/hq-colors";
 
 export const metadata = { title: "Cadence — Island Investors HQ" };
 
@@ -71,6 +73,21 @@ export default async function CadencePage() {
               Leads & publishes
             </p>
           </div>
+        </div>
+
+        {/* Memory retrieval link */}
+        <div className="flex justify-end">
+          <Link
+            href="/hq/dashboard/cadence/retrieve"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-sm border text-[11px] font-sans font-semibold uppercase tracking-wider transition-colors"
+            style={{
+              borderColor: HQ_GOLD.border,
+              color: HQ_GOLD.text,
+              background: HQ_GOLD.bgTint,
+            }}
+          >
+            Query Memory →
+          </Link>
         </div>
 
         {/* Activity feed */}
