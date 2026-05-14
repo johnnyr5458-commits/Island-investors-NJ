@@ -63,7 +63,13 @@ async function checkIncompleteEntityRefs(): Promise<AuditIssue[]> {
   }
 }
 
+// Entity types that participate in relationships as actors/owners but never generate
+// their own events. Excluding these prevents false-positive critical issues on every
+// audit run (e.g. hq_user appears in authored_by contexts but is never an event subject).
+const PARTICIPANT_ONLY_ENTITY_TYPES = new Set(["hq_user"]);
+
 // Context records that reference an entity_id not present in any event.
+// Skips participant-only entity types that are relationship actors, not event subjects.
 async function checkContextChainGaps(): Promise<AuditIssue[]> {
   try {
     const admin = createAdminClient();
@@ -83,7 +89,7 @@ async function checkContextChainGaps(): Promise<AuditIssue[]> {
 
     for (const ctx of (contextsResult.data ?? [])) {
       const keyA = `${ctx.entity_type_a}::${ctx.entity_id_a}`;
-      if (!knownEntities.has(keyA) && !seen.has(keyA)) {
+      if (!knownEntities.has(keyA) && !seen.has(keyA) && !PARTICIPANT_ONLY_ENTITY_TYPES.has(ctx.entity_type_a)) {
         seen.add(keyA);
         issues.push(makeIssue("context_chain_gap", "critical", {
           entity_type: ctx.entity_type_a,
@@ -96,7 +102,7 @@ async function checkContextChainGaps(): Promise<AuditIssue[]> {
       }
 
       const keyB = `${ctx.entity_type_b}::${ctx.entity_id_b}`;
-      if (!knownEntities.has(keyB) && !seen.has(keyB)) {
+      if (!knownEntities.has(keyB) && !seen.has(keyB) && !PARTICIPANT_ONLY_ENTITY_TYPES.has(ctx.entity_type_b)) {
         seen.add(keyB);
         issues.push(makeIssue("context_chain_gap", "critical", {
           entity_type: ctx.entity_type_b,
