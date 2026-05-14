@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { createAdminClient } from "@/lib/supabase/server";
 import { sendLeadNotification } from "@/lib/push";
+import { logEvent } from "@/lib/cadence";
 
 const TO_EMAIL = process.env.CONTACT_TO_EMAIL ?? "johnnyr5458@gmail.com";
 const FROM_EMAIL = process.env.CONTACT_FROM_EMAIL ?? "forms@islandinvestorsnj.com";
@@ -56,6 +57,15 @@ export async function POST(req: NextRequest) {
   }
 
   console.log("[partner] Lead saved. Name:", name, "| Email:", email);
+
+  // Cadence event — fire-and-forget
+  logEvent({
+    type: "partner.inquiry_received",
+    source: "partners",
+    summary: `New partner inquiry: ${name}${company ? ` — ${company}` : ""}`,
+    entityType: "partner_submission",
+    importance: "normal",
+  });
 
   // 2. Push notification — fire-and-forget
   void (async () => {

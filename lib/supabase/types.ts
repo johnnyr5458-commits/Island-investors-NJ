@@ -82,6 +82,21 @@ export interface DbPushSubscription {
   created_at: string;
 }
 
+export interface CadenceEvent {
+  id: string;
+  type: string;
+  timestamp: string;
+  actor: string | null;
+  source: string;
+  summary: string;
+  entity_type: string | null;
+  entity_id: string | null;
+  metadata: Record<string, unknown> | null;
+  importance: "normal" | "high";
+  created_at: string;
+  updated_at: string;
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -104,6 +119,11 @@ export type Database = {
         Row: PartnerSubmission;
         Insert: Partial<PartnerSubmission> & { name: string; email: string; phone: string };
         Update: Partial<PartnerSubmission>;
+      };
+      cadence_events: {
+        Row: CadenceEvent;
+        Insert: Partial<CadenceEvent> & { type: string; source: string; summary: string };
+        Update: Partial<CadenceEvent>;
       };
     };
   };

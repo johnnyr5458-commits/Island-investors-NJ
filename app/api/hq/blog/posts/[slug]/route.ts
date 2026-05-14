@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getDbPost, upsertDbPost, deleteDbPost } from "@/lib/blog-db";
 import { revalidatePath } from "next/cache";
+import { logEvent } from "@/lib/cadence";
 
 async function requireHQAuth() {
   const supabase = await createClient();
@@ -84,6 +85,30 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
   revalidatePath("/blog");
   revalidatePath(`/blog/${slug}`);
 
+  // Cadence event — fire-and-forget
+  const evIsCreate = !existing;
+  const evIsPublishing = body.status === "published" && existing?.status !== "published";
+  const evIsUnpublishing = body.status === "draft" && existing?.status === "published";
+  const eventType = evIsCreate ? "blog.created"
+    : evIsPublishing ? "blog.published"
+    : evIsUnpublishing ? "blog.unpublished"
+    : "blog.updated";
+  logEvent({
+    type: eventType,
+    actor: user.id,
+    source: "blog",
+    summary: evIsCreate
+      ? `Blog created: "${post.title}"`
+      : evIsPublishing
+      ? `Blog published: "${post.title}"`
+      : evIsUnpublishing
+      ? `Blog unpublished: "${post.title}"`
+      : `Blog updated: "${post.title}"`,
+    entityType: "blog_post",
+    entityId: slug,
+    importance: (evIsCreate || evIsPublishing) ? "high" : "normal",
+  });
+
   return NextResponse.json({ post });
 }
 
@@ -97,6 +122,15 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
 
   revalidatePath("/blog");
   revalidatePath(`/blog/${slug}`);
+
+  logEvent({
+    type: "blog.deleted",
+    actor: user.id,
+    source: "blog",
+    summary: `Blog deleted: slug "${slug}"`,
+    entityType: "blog_post",
+    entityId: slug,
+  });
 
   return NextResponse.json({ ok: true });
 }
