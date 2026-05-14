@@ -75,8 +75,19 @@ export default async function CadencePage() {
           </div>
         </div>
 
-        {/* Memory retrieval link */}
-        <div className="flex justify-end">
+        {/* Cadence tool links */}
+        <div className="flex justify-end gap-3">
+          <Link
+            href="/hq/dashboard/cadence/audit"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-sm border text-[11px] font-sans font-semibold uppercase tracking-wider transition-colors"
+            style={{
+              borderColor: "rgba(255,255,255,0.10)",
+              color: HQ_TEXT.muted,
+              background: "rgba(255,255,255,0.03)",
+            }}
+          >
+            Audit
+          </Link>
           <Link
             href="/hq/dashboard/cadence/retrieve"
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-sm border text-[11px] font-sans font-semibold uppercase tracking-wider transition-colors"

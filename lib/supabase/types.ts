@@ -158,6 +158,56 @@ export interface RetrievalResponse {
   retrieved_at: string;
 }
 
+// ── Phase 5: Audit Layer ──────────────────────────────────────────────────────
+
+export type AuditIssueSeverity = "info" | "warning" | "critical";
+
+export type AuditIssueType =
+  | "incomplete_entity_reference"
+  | "context_chain_gap"
+  | "orphaned_event"
+  | "stale_entity"
+  | "duplicate_event_risk"
+  | "singleton_timeline"
+  | "missing_vault_note";
+
+export interface AuditIssue {
+  id: string;
+  type: AuditIssueType;
+  severity: AuditIssueSeverity;
+  entity_type?: string;
+  entity_id?: string;
+  event_id?: string;
+  context_id?: string;
+  explanation: string;
+  recommended_action: string;
+  is_safe_to_repair: boolean;
+  source_refs: string[];
+}
+
+export interface AuditHealthSummary {
+  total_events: number;
+  total_contexts: number;
+  total_entities: number;
+  incomplete_refs: number;
+  context_chain_gaps: number;
+  orphaned_events: number;
+  stale_entities: number;
+  duplicate_event_risks: number;
+  singleton_timelines: number;
+  missing_vault_notes: number;
+  health_score: number;
+}
+
+export interface AuditReport {
+  id: string;
+  ran_at: string;
+  triggered_by: "manual" | "scheduled" | "system";
+  duration_ms: number;
+  issues: AuditIssue[];
+  summary: AuditHealthSummary;
+}
+
 // ── Database Schema ───────────────────────────────────────────────────────────
 
 export type Database = {
