@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { HQ_TEXT, HQ_GOLD } from "@/lib/hq-colors";
 import { updateLeadStatus } from "@/app/hq/dashboard/leads/actions";
-import type { ContactSubmission, LeadStatus } from "@/lib/supabase/types";
+import type { ContactSubmission, LeadStatus, CadenceEvent } from "@/lib/supabase/types";
+import EntityTimeline from "@/components/hq/cadence/EntityTimeline";
 
 // ── Status badge ─────────────────────────────────────────────────────────────
 
@@ -38,6 +39,15 @@ function LeadModal({
   onClose: () => void;
   onStatusChange: (id: string, status: LeadStatus) => void;
 }) {
+  const [history, setHistory] = useState<CadenceEvent[]>([]);
+
+  useEffect(() => {
+    fetch(`/api/hq/cadence/timeline?entityType=contact_submission&entityId=${lead.id}`)
+      .then(r => r.json())
+      .then((d: { events?: CadenceEvent[] }) => setHistory(d.events ?? []))
+      .catch(() => {});
+  }, [lead.id]);
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -133,6 +143,14 @@ function LeadModal({
               </button>
             ))}
           </div>
+
+          {/* Activity history */}
+          {history.length > 0 && (
+            <>
+              <div className="h-px mt-5 mb-4" style={{ background: "rgba(255,255,255,0.06)" }} />
+              <EntityTimeline events={history} title="Activity History" />
+            </>
+          )}
         </div>
       </div>
     </div>

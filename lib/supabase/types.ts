@@ -82,6 +82,17 @@ export interface DbPushSubscription {
   created_at: string;
 }
 
+export interface CadenceContext {
+  id: string;
+  entity_type_a: string;
+  entity_id_a: string;
+  relationship: string;
+  entity_type_b: string;
+  entity_id_b: string;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+}
+
 export interface CadenceEvent {
   id: string;
   type: string;
@@ -124,6 +135,11 @@ export type Database = {
         Row: CadenceEvent;
         Insert: Partial<CadenceEvent> & { type: string; source: string; summary: string };
         Update: Partial<CadenceEvent>;
+      };
+      cadence_contexts: {
+        Row: CadenceContext;
+        Insert: Partial<CadenceContext> & { entity_type_a: string; entity_id_a: string; relationship: string; entity_type_b: string; entity_id_b: string };
+        Update: Partial<CadenceContext>;
       };
     };
   };

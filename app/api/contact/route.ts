@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 
   // 1. Insert into Supabase first — this is the source of truth
   const admin = createAdminClient();
-  const { error: dbError } = await admin.from("contact_submissions").insert({
+  const { data: newLead, error: dbError } = await admin.from("contact_submissions").insert({
     name:        name.trim(),
     phone:       phone.trim(),
     address:     address.trim(),
@@ -46,10 +46,10 @@ export async function POST(req: NextRequest) {
     lead_source: "website",
     status:      "new",
     raw_payload: body,
-  });
+  }).select("id").single();
 
-  if (dbError) {
-    console.error("[contact] Supabase insert error:", dbError.message);
+  if (dbError || !newLead) {
+    console.error("[contact] Supabase insert error:", dbError?.message);
     return NextResponse.json({ error: "Failed to save submission" }, { status: 500 });
   }
 
@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
     source: "leads",
     summary: `New seller lead: ${name} — ${address}`,
     entityType: "contact_submission",
+    entityId: newLead.id,
     importance: "high",
   });
 

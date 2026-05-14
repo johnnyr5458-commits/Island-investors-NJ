@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getDbPost, upsertDbPost, deleteDbPost } from "@/lib/blog-db";
 import { revalidatePath } from "next/cache";
-import { logEvent } from "@/lib/cadence";
+import { logEvent, logContext } from "@/lib/cadence";
 
 async function requireHQAuth() {
   const supabase = await createClient();
@@ -107,6 +107,15 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
     entityType: "blog_post",
     entityId: slug,
     importance: (evIsCreate || evIsPublishing) ? "high" : "normal",
+  });
+
+  // Blog ↔ author context — idempotent, unique-indexed
+  logContext({
+    entityTypeA: "blog_post",
+    entityIdA: slug,
+    relationship: "authored_by",
+    entityTypeB: "hq_user",
+    entityIdB: user.id,
   });
 
   return NextResponse.json({ post });
