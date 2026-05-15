@@ -7,7 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "sync:vault": "node scripts/sync-cadence-vault.mjs"
+    "sync:vault": "node scripts/sync-cadence-vault.mjs",
+    "sync:blog": "node scripts/sync-blog-status.mjs",
+    "sync:blog:sync": "node scripts/sync-blog-status.mjs --mode sync",
+    "sync:blog:maintain": "node scripts/sync-blog-status.mjs --mode maintain",
+    "sync:intelligence": "node scripts/sync-intelligence.mjs",
+    "sync:intelligence:process": "node scripts/sync-intelligence.mjs --mode process",
+    "sync:intelligence:weekly": "node scripts/sync-intelligence.mjs --mode weekly"
   },
   "dependencies": {
     "@google-analytics/data": "^5.2.2",
