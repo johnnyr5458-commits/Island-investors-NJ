@@ -156,6 +156,15 @@ export default function AnalyticsClient({ initialData, initialRange }: Analytics
   const { submissions, overview, sources, devices, topPages, geo, ga4Configured } = data;
   const totalInquiries = submissions.seller + submissions.partner;
 
+  const emptyLabel = range === "today"
+    ? "No traffic recorded yet today — GA4 processes same-day data with a short delay"
+    : "No traffic data for this period";
+
+  // For "today", realtime active users (already polled) is more accurate than the delayed standard API
+  const activeUsersValue = range === "today" && liveUsers !== null
+    ? liveUsers
+    : overview?.activeUsers ?? 0;
+
   return (
     <div style={{ paddingBottom: 80 }}>
 
@@ -211,8 +220,8 @@ export default function AnalyticsClient({ initialData, initialRange }: Analytics
         <div style={{ minWidth: 140, flexShrink: 0 }}>
           <StatCard
             label="Active Users"
-            value={ga4Configured && overview ? fmt(overview.activeUsers) : "—"}
-            sub={ga4Configured ? RANGE_LABELS[range] : "Connect GA4"}
+            value={ga4Configured && (overview || range === "today") ? fmt(activeUsersValue) : "—"}
+            sub={ga4Configured ? (range === "today" ? "Realtime" : RANGE_LABELS[range]) : "Connect GA4"}
             icon={icons.visitors}
           />
         </div>
@@ -244,6 +253,13 @@ export default function AnalyticsClient({ initialData, initialRange }: Analytics
         </div>
       </div>
 
+      {/* Today data-lag note */}
+      {range === "today" && ga4Configured && (
+        <p style={{ fontSize: 10, color: HQ_TEXT.helper, padding: "6px 16px 0", margin: 0, lineHeight: 1.5 }}>
+          Today&apos;s session totals reflect processed GA4 data (may lag 4–8 hrs). Active users is realtime.
+        </p>
+      )}
+
       {/* Chart grid */}
       <div
         style={{
@@ -254,11 +270,11 @@ export default function AnalyticsClient({ initialData, initialRange }: Analytics
         }}
       >
         <GlassCard title="Traffic Trend">
-          <TrafficChart data={overview?.trend ?? null} />
+          <TrafficChart data={overview?.trend ?? null} emptyLabel={emptyLabel} />
         </GlassCard>
 
         <GlassCard title="Traffic Sources">
-          <SourcesChart data={sources ?? null} />
+          <SourcesChart data={sources ?? null} emptyLabel={emptyLabel} />
         </GlassCard>
 
         <GlassCard title="Device Split">

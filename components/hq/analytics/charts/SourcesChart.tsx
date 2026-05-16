@@ -10,6 +10,7 @@ interface SourceData {
 
 interface SourcesChartProps {
   data: SourceData[] | null;
+  emptyLabel?: string;
 }
 
 const COLORS = ["#C8962A", "#34d399", "#60a5fa", "#a78bfa"];
@@ -33,9 +34,12 @@ const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: Array<
   );
 };
 
-export default function SourcesChart({ data }: SourcesChartProps) {
-  if (!data || data.length === 0) {
+export default function SourcesChart({ data, emptyLabel }: SourcesChartProps) {
+  if (data === null) {
     return <Ga4PendingCard height={160} />;
+  }
+  if (data.length === 0) {
+    return <Ga4PendingCard height={160} label={emptyLabel ?? "No traffic data for this period"} />;
   }
 
   return (

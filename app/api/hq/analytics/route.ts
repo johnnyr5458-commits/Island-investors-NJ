@@ -67,6 +67,17 @@ export async function GET(request: NextRequest) {
     partner:   submissions.partner,
   });
 
+  // Extra diagnostics for today range — distinguishes "empty rows" from "null/error"
+  if (safeRange === "today") {
+    console.log("[analytics] today range debug:",
+      "overview:", overview
+        ? `ok (pv=${overview.pageviews} sess=${overview.sessions} users=${overview.activeUsers} trendPts=${overview.trend.length})`
+        : "null (error or unconfigured)",
+      "| sources:", sources === null ? "null (error or unconfigured)" : `array[${sources.length}] (empty = GA4 processing lag)`,
+      "| devices:", devices === null ? "null" : `array[${devices.length}]`,
+    );
+  }
+
   // Conversion rate = total form submissions / sessions * 100
   const sessions = overview?.sessions ?? 0;
   const totalSubmissions = submissions.seller + submissions.partner;

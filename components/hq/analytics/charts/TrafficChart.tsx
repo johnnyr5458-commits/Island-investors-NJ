@@ -17,6 +17,7 @@ interface DataPoint {
 
 interface TrafficChartProps {
   data: DataPoint[] | null;
+  emptyLabel?: string;
 }
 
 const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) => {
@@ -41,9 +42,12 @@ const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?:
   );
 };
 
-export default function TrafficChart({ data }: TrafficChartProps) {
-  if (!data || data.length === 0) {
+export default function TrafficChart({ data, emptyLabel }: TrafficChartProps) {
+  if (data === null) {
     return <Ga4PendingCard height={180} />;
+  }
+  if (data.length === 0) {
+    return <Ga4PendingCard height={180} label={emptyLabel ?? "No traffic data for this period"} />;
   }
 
   return (
