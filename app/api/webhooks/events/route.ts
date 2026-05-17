@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   // ── Auth ─────────────────────────────────────────────────────────────────────
   const secret = process.env.WEBHOOK_SECRET;
   if (!secret) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json({ error: "Not configured" }, { status: 503 });
   }
 
   const header = req.headers.get("authorization") ?? "";
