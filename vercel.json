@@ -3,6 +3,14 @@
     {
       "path": "/api/cron/weekly-analytics",
       "schedule": "0 21 * * 0"
+    },
+    {
+      "path": "/api/cron/cadence-audit",
+      "schedule": "0 22 * * 0"
+    },
+    {
+      "path": "/api/cron/cadence-sync",
+      "schedule": "0 23 * * 0"
     }
   ]
 }

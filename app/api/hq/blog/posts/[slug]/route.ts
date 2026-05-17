@@ -85,10 +85,53 @@ export async function PUT(req: NextRequest, { params }: RouteParams) {
   revalidatePath("/blog");
   revalidatePath(`/blog/${slug}`);
 
+  // Compute publish state flags (used by both sitemap ping and Cadence event)
+  const evIsCreate      = !existing;
+  const evIsPublishing  = body.status === "published" && existing?.status !== "published";
+  const evIsUnpublishing = body.status === "draft"    && existing?.status === "published";
+
+  // Sitemap ping — fire-and-forget, only on first publish
+  if (evIsPublishing) {
+    void (async () => {
+      try {
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://islandinvestorsnj.com";
+        await fetch(`https://www.google.com/ping?sitemap=${siteUrl}/sitemap.xml`);
+
+        const indexNowKey = process.env.INDEXNOW_KEY;
+        if (indexNowKey) {
+          await fetch("https://api.indexnow.org/indexnow", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              host: "islandinvestorsnj.com",
+              key: indexNowKey,
+              urlList: [`${siteUrl}/blog/${slug}`],
+            }),
+          });
+        }
+
+        logEvent({
+          type:       "system.sitemap_pinged",
+          source:     "blog",
+          summary:    `Sitemap pinged after publishing: "${post.title}"`,
+          entityType: "blog_post",
+          entityId:   slug,
+          metadata:   { slug, indexNow: !!indexNowKey },
+        });
+      } catch (err) {
+        logEvent({
+          type:       "system.sitemap_ping_failed",
+          source:     "blog",
+          summary:    `Sitemap ping failed after publishing: "${post.title}"`,
+          entityType: "blog_post",
+          entityId:   slug,
+          metadata:   { slug, error: String(err) },
+        });
+      }
+    })();
+  }
+
   // Cadence event — fire-and-forget
-  const evIsCreate = !existing;
-  const evIsPublishing = body.status === "published" && existing?.status !== "published";
-  const evIsUnpublishing = body.status === "draft" && existing?.status === "published";
   const eventType = evIsCreate ? "blog.created"
     : evIsPublishing ? "blog.published"
     : evIsUnpublishing ? "blog.unpublished"
